@@ -47,6 +47,23 @@ export async function initializeDatabase(db: D1Database) {
       )
     `).run()
 
+    // Create portfolio_settings table
+    await db.prepare(`
+      CREATE TABLE IF NOT EXISTS portfolio_settings (
+        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+        portfolio_id TEXT NOT NULL UNIQUE,
+        per_trade_fraction REAL DEFAULT 0.02,
+        commission_bps INTEGER DEFAULT 5,
+        take_profit_pct REAL DEFAULT 0.05,
+        stop_loss_pct REAL DEFAULT 0.02,
+        sentiment_threshold REAL DEFAULT 0.6,
+        max_open_positions INTEGER DEFAULT 10,
+        timing_gate_enabled BOOLEAN DEFAULT TRUE,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).run()
+
     // Create recommendations table
     await db.prepare(`
       CREATE TABLE IF NOT EXISTS recommendations (
@@ -64,6 +81,40 @@ export async function initializeDatabase(db: D1Database) {
         cooldown_key TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).run()
+
+    // Create news_items table
+    await db.prepare(`
+      CREATE TABLE IF NOT EXISTS news_items (
+        id TEXT PRIMARY KEY,
+        ticker_id TEXT,
+        source TEXT,
+        title TEXT NOT NULL,
+        description TEXT,
+        url TEXT UNIQUE NOT NULL,
+        author TEXT,
+        published_at DATETIME,
+        sentiment INTEGER,
+        relevance REAL,
+        is_sponsored BOOLEAN DEFAULT FALSE,
+        hash TEXT UNIQUE,
+        processed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).run()
+
+    // Create signals_intraday table
+    await db.prepare(`
+      CREATE TABLE IF NOT EXISTS signals_intraday (
+        id TEXT PRIMARY KEY,
+        ticker_id TEXT NOT NULL,
+        interval TEXT NOT NULL,
+        indicators TEXT DEFAULT '{}',
+        verdict TEXT DEFAULT 'hold',
+        last_price REAL,
+        computed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `).run()
 

@@ -45,34 +45,42 @@ newsRoutes.get('/ticker/:symbol', async (c) => {
   }
 })
 
-// Trigger news analysis (manual trigger for testing)
+// Trigger news analysis pipeline
 newsRoutes.post('/analyze', async (c) => {
   try {
-    const { url, title, description } = await c.req.json()
+    const { NewsAnalyzer } = await import('../services/news-analyzer')
+    const analyzer = new NewsAnalyzer(c.env)
     
-    if (!c.env.OPENAI_API_KEY) {
-      return c.json<APIResponse>({ 
-        success: false, 
-        error: 'OpenAI API key not configured' 
-      }, 400)
-    }
-
-    // This would normally be called by the news ingestion worker
-    // For now, just return a mock analysis
-    const analysis = {
-      sponsored: false,
-      confidence: 0.85,
-      relevance: 0.7,
-      sentiment: 1,
-      rationale: 'Positive earnings report with strong revenue growth'
-    }
+    const processedCount = await analyzer.processAndStoreNews(c.env.DB)
 
     return c.json<APIResponse>({ 
       success: true, 
-      data: analysis,
-      message: 'News analyzed (mock response)'
+      data: { processedCount },
+      message: `Processed ${processedCount} news articles`
     })
   } catch (error) {
-    return c.json<APIResponse>({ success: false, error: 'Analysis failed' }, 500)
+    console.error('News analysis error:', error)
+    return c.json<APIResponse>({ success: false, error: 'News analysis failed' }, 500)
+  }
+})
+
+// Fetch and analyze news for specific ticker
+newsRoutes.post('/fetch/:symbol', async (c) => {
+  try {
+    const symbol = c.req.param('symbol').toUpperCase()
+    const { NewsAnalyzer } = await import('../services/news-analyzer')
+    const analyzer = new NewsAnalyzer(c.env)
+    
+    // Fetch news specifically for this ticker
+    const articles = await analyzer.fetchLatestNews(`${symbol} stock`)
+    
+    return c.json<APIResponse>({ 
+      success: true, 
+      data: { articles: articles.slice(0, 5), symbol },
+      message: `Fetched news for ${symbol}`
+    })
+  } catch (error) {
+    console.error('News fetch error:', error)
+    return c.json<APIResponse>({ success: false, error: 'News fetch failed' }, 500)
   }
 })

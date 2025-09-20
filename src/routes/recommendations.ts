@@ -113,3 +113,35 @@ recommendationRoutes.post('/:id/dismiss', async (c) => {
     return c.json<APIResponse>({ success: false, error: 'Failed to dismiss recommendation' }, 500)
   }
 })
+
+// Generate new recommendations for portfolio
+recommendationRoutes.post('/generate/:portfolioId', async (c) => {
+  try {
+    const payload = c.get('jwtPayload') as any
+    const portfolioId = c.req.param('portfolioId')
+    
+    // Verify portfolio ownership
+    const portfolio = await c.env.DB.prepare(`
+      SELECT id FROM portfolios WHERE id = ? AND user_id = ?
+    `).bind(portfolioId, payload.user_id).first()
+
+    if (!portfolio) {
+      return c.json<APIResponse>({ success: false, error: 'Portfolio not found' }, 404)
+    }
+
+    // Run recommendation engine
+    const { RecommendationEngine } = await import('../services/recommendation-engine')
+    const engine = new RecommendationEngine(c.env)
+    
+    const result = await engine.runRecommendationPipeline(c.env.DB, portfolioId)
+
+    return c.json<APIResponse>({ 
+      success: true, 
+      data: result,
+      message: `Generated ${result.recommendationsGenerated} recommendations based on ${result.newsProcessed} news articles`
+    })
+  } catch (error) {
+    console.error('Recommendation generation error:', error)
+    return c.json<APIResponse>({ success: false, error: 'Failed to generate recommendations' }, 500)
+  }
+})

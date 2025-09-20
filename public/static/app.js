@@ -387,9 +387,25 @@ class TraderApp {
 
           <!-- Recent Recommendations -->
           <div class="bg-white shadow overflow-hidden sm:rounded-md mb-6">
-            <div class="px-4 py-5 sm:px-6">
-              <h3 class="text-lg leading-6 font-medium text-gray-900">Recent Recommendations</h3>
-              <p class="mt-1 max-w-2xl text-sm text-gray-500">Latest trading recommendations for your portfolios</p>
+            <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="text-lg leading-6 font-medium text-gray-900">Recent Recommendations</h3>
+                  <p class="mt-1 max-w-2xl text-sm text-gray-500">Latest trading recommendations for your portfolios</p>
+                </div>
+                <div class="flex space-x-2">
+                  <button onclick="app.generateRecommendations()" 
+                    class="inline-flex items-center px-3 py-2 border border-blue-300 shadow-sm text-sm leading-4 font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50">
+                    <i class="fas fa-robot mr-2"></i>
+                    Generate AI Recs
+                  </button>
+                  <button onclick="app.analyzeNews()" 
+                    class="inline-flex items-center px-3 py-2 border border-green-300 shadow-sm text-sm leading-4 font-medium rounded-md text-green-700 bg-white hover:bg-green-50">
+                    <i class="fas fa-newspaper mr-2"></i>
+                    Analyze News
+                  </button>
+                </div>
+              </div>
             </div>
             <div id="recent-recommendations" class="border-t border-gray-200">
               <!-- Recommendations will be loaded here -->
@@ -720,6 +736,71 @@ class TraderApp {
         return 'bg-blue-100 text-blue-800'
       default:
         return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  async generateRecommendations() {
+    try {
+      // Get first portfolio ID (assume user has at least one)
+      const portfoliosResponse = await axios.get('/api/portfolios')
+      if (!portfoliosResponse.data.success || !portfoliosResponse.data.data.length) {
+        alert('No portfolios found. Please create a portfolio first.')
+        return
+      }
+
+      const portfolioId = portfoliosResponse.data.data[0].id
+      
+      // Show loading state
+      const button = event.target
+      const originalText = button.innerHTML
+      button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...'
+      button.disabled = true
+
+      const response = await axios.post(`/api/recommendations/generate/${portfolioId}`)
+      
+      if (response.data.success) {
+        alert(`Success! ${response.data.message}`)
+        // Reload recommendations
+        this.loadDashboardData()
+      } else {
+        alert(`Error: ${response.data.error}`)
+      }
+    } catch (error) {
+      console.error('Generate recommendations error:', error)
+      alert('Failed to generate recommendations. Please try again.')
+    } finally {
+      // Reset button
+      const button = event.target
+      button.innerHTML = '<i class="fas fa-robot mr-2"></i>Generate AI Recs'
+      button.disabled = false
+    }
+  }
+
+  async analyzeNews() {
+    try {
+      // Show loading state
+      const button = event.target
+      const originalText = button.innerHTML
+      button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Analyzing...'
+      button.disabled = true
+
+      const response = await axios.post('/api/news/analyze')
+      
+      if (response.data.success) {
+        alert(`Success! ${response.data.message}`)
+        // Update news count
+        document.getElementById('news-count').textContent = response.data.data.processedCount
+      } else {
+        alert(`Error: ${response.data.error}`)
+      }
+    } catch (error) {
+      console.error('Analyze news error:', error)
+      alert('Failed to analyze news. Please try again.')
+    } finally {
+      // Reset button
+      const button = event.target
+      button.innerHTML = '<i class="fas fa-newspaper mr-2"></i>Analyze News'
+      button.disabled = false
     }
   }
 

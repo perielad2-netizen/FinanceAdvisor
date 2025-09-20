@@ -55,7 +55,14 @@ authRoutes.post('/register', async (c) => {
       VALUES (?, ?, 'My Portfolio', 'USD', true, false)
     `).bind(portfolioId, userId).run()
 
-    // Skip portfolio settings for now (table not created)
+    // Create portfolio settings
+    try {
+      await c.env.DB.prepare(`
+        INSERT INTO portfolio_settings (portfolio_id) VALUES (?)
+      `).bind(portfolioId).run()
+    } catch (error) {
+      console.log('Portfolio settings creation skipped (table may not exist yet)')
+    }
 
     return c.json<APIResponse>({ 
       success: true, 
