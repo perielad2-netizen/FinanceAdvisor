@@ -1,0 +1,42 @@
+{
+  "name": "webapp",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:sandbox": "wrangler pages dev dist --ip 0.0.0.0 --port 3000",
+    "dev:d1": "wrangler pages dev dist --d1=trader-advisor-db --local --ip 0.0.0.0 --port 3000",
+    "build": "vite build",
+    "preview": "wrangler pages dev",
+    "deploy": "npm run build && wrangler pages deploy",
+    "deploy:prod": "npm run build && wrangler pages deploy dist --project-name trader-advisor",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "clean-port": "fuser -k 3000/tcp 2>/dev/null || true",
+    "test": "curl http://localhost:3000",
+    "db:create": "wrangler d1 create trader-advisor-db",
+    "db:migrate:local": "wrangler d1 migrations apply trader-advisor-db --local",
+    "db:migrate:prod": "wrangler d1 migrations apply trader-advisor-db",
+    "db:seed": "wrangler d1 execute trader-advisor-db --local --file=./seed.sql",
+    "db:reset": "rm -rf .wrangler/state/v3/d1 && npm run db:migrate:local && npm run db:seed",
+    "db:console:local": "wrangler d1 execute trader-advisor-db --local",
+    "db:console:prod": "wrangler d1 execute trader-advisor-db",
+    "git:commit": "git add . && git commit -m",
+    "git:status": "git status",
+    "git:log": "git log --oneline"
+  },
+  "dependencies": {
+    "hono": "^4.9.7",
+    "hono-rate-limiter": "^0.4.0",
+    "bcryptjs": "^2.4.3",
+    "zod": "^3.23.0",
+    "jose": "^5.8.0"
+  },
+  "devDependencies": {
+    "@hono/vite-build": "^1.2.0",
+    "@hono/vite-dev-server": "^0.18.2",
+    "vite": "^6.3.5",
+    "wrangler": "^4.4.0",
+    "@cloudflare/workers-types": "^4.20240909.0",
+    "@types/bcryptjs": "^2.4.6",
+    "typescript": "^5.0.0"
+  }
+}
