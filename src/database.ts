@@ -134,6 +134,23 @@ export async function initializeDatabase(db: D1Database) {
       `).bind(id, symbol, exchange, company).run()
     }
 
+    // Add tickers to any existing portfolios that don't have them
+    const portfolios = await db.prepare('SELECT id FROM portfolios').all()
+    
+    for (const portfolio of portfolios.results || []) {
+      for (const [tickerId, symbol] of tickers) {
+        await db.prepare(`
+          INSERT OR IGNORE INTO portfolio_tickers (
+            id, portfolio_id, ticker_id, enabled
+          ) VALUES (?, ?, ?, true)
+        `).bind(
+          'pt-' + Math.random().toString(36).substr(2, 9),
+          portfolio.id,
+          tickerId
+        ).run()
+      }
+    }
+
     console.log('Database initialization complete!')
     return true
   } catch (error) {

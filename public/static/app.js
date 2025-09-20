@@ -206,7 +206,7 @@ class TraderApp {
         </nav>
 
         <!-- Main Content -->
-        <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 pb-20 md:pb-6">
           <!-- Page Content -->
           <div id="page-content">
             <!-- Content will be loaded here -->
@@ -388,19 +388,19 @@ class TraderApp {
           <!-- Recent Recommendations -->
           <div class="bg-white shadow overflow-hidden sm:rounded-md mb-6">
             <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
-              <div class="flex items-center justify-between">
+              <div class="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                 <div>
                   <h3 class="text-lg leading-6 font-medium text-gray-900">Recent Recommendations</h3>
                   <p class="mt-1 max-w-2xl text-sm text-gray-500">Latest trading recommendations for your portfolios</p>
                 </div>
-                <div class="flex space-x-2">
+                <div class="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
                   <button onclick="app.generateRecommendations()" 
-                    class="inline-flex items-center px-3 py-2 border border-blue-300 shadow-sm text-sm leading-4 font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50">
+                    class="inline-flex items-center justify-center px-4 py-2 border border-blue-300 shadow-sm text-sm font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50 w-full sm:w-auto">
                     <i class="fas fa-robot mr-2"></i>
                     Generate AI Recs
                   </button>
                   <button onclick="app.analyzeNews()" 
-                    class="inline-flex items-center px-3 py-2 border border-green-300 shadow-sm text-sm leading-4 font-medium rounded-md text-green-700 bg-white hover:bg-green-50">
+                    class="inline-flex items-center justify-center px-4 py-2 border border-green-300 shadow-sm text-sm font-medium rounded-md text-green-700 bg-white hover:bg-green-50 w-full sm:w-auto">
                     <i class="fas fa-newspaper mr-2"></i>
                     Analyze News
                   </button>
