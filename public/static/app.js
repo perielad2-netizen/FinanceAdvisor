@@ -739,6 +739,46 @@ class TraderApp {
     }
   }
 
+  async generateAdvancedAIRecommendations() {
+    try {
+      // Get first portfolio ID (assume user has at least one)
+      const portfoliosResponse = await axios.get('/api/portfolios')
+      if (!portfoliosResponse.data.success || !portfoliosResponse.data.data.length) {
+        alert('No portfolios found. Please create a portfolio first.')
+        return
+      }
+      
+      const portfolioId = portfoliosResponse.data.data[0].id
+      
+      // Show loading state
+      const button = document.getElementById('generate-ai-recs')
+      const originalText = button.innerHTML
+      button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating AI Analysis...'
+      button.disabled = true
+      
+      // Call advanced AI analysis endpoint
+      const response = await axios.post(`/api/advanced/ai-analysis/${portfolioId}`)
+      
+      if (response.data.success) {
+        this.showAIAnalysisResults(response.data)
+        this.showNotification('Advanced AI analysis completed successfully!', 'success')
+      } else {
+        throw new Error(response.data.error || 'AI analysis failed')
+      }
+      
+    } catch (error) {
+      console.error('Advanced AI analysis failed:', error)
+      this.showNotification('AI analysis failed: ' + (error.response?.data?.error || error.message), 'error')
+    } finally {
+      // Reset button
+      const button = document.getElementById('generate-ai-recs')
+      if (button) {
+        button.innerHTML = '<i class="fas fa-brain mr-2"></i>Generate Advanced AI Analysis'
+        button.disabled = false
+      }
+    }
+  }
+
   async generateRecommendations() {
     try {
       // Get first portfolio ID (assume user has at least one)

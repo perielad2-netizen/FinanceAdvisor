@@ -12,6 +12,7 @@ import { portfolioRoutes } from './routes/portfolios'
 import { newsRoutes } from './routes/news'
 import { recommendationRoutes } from './routes/recommendations'
 import { marketRoutes } from './routes/market'
+import advancedApiRoutes from './routes/advanced-api'
 import { initializeDatabase } from './database'
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>()
@@ -43,6 +44,7 @@ app.route('/api/portfolios', portfolioRoutes)
 app.route('/api/news', newsRoutes)
 app.route('/api/recommendations', recommendationRoutes)
 app.route('/api/market', marketRoutes)
+app.route('/api/advanced', advancedApiRoutes)
 
 // Main application route
 app.get('/', (c) => {
@@ -72,7 +74,7 @@ app.get('/', (c) => {
         </div>
         
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-        <script src="/static/app.js"></script>
+        <script src="/static/advanced-app.js"></script>
     </body>
     </html>
   `)
