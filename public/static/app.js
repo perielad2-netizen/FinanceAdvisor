@@ -393,16 +393,54 @@ class TraderApp {
                   <h3 class="text-lg leading-6 font-medium text-gray-900">Recent Recommendations</h3>
                   <p class="mt-1 max-w-2xl text-sm text-gray-500">Latest trading recommendations for your portfolios</p>
                 </div>
-                <div class="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
-                  <button onclick="app.generateRecommendations()" 
-                    class="inline-flex items-center justify-center px-4 py-2 border border-blue-300 shadow-sm text-sm font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50 w-full sm:w-auto">
-                    <i class="fas fa-robot mr-2"></i>
-                    Generate AI Recs
+                <!-- Advanced AI Features Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 mb-4">
+                  <button id="generate-ai-recs" onclick="app.generateAdvancedAIRecommendations()" 
+                    class="flex flex-col items-center justify-center p-3 border border-purple-300 shadow-sm text-xs font-medium rounded-md text-purple-700 bg-white hover:bg-purple-50 transition-colors">
+                    <i class="fas fa-brain text-lg mb-1"></i>
+                    <span class="text-center">Advanced AI</span>
                   </button>
+                  
+                  <button onclick="app.showTechnicalAnalysis()" 
+                    class="flex flex-col items-center justify-center p-3 border border-blue-300 shadow-sm text-xs font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50 transition-colors">
+                    <i class="fas fa-chart-line text-lg mb-1"></i>
+                    <span class="text-center">Technical</span>
+                  </button>
+                  
+                  <button onclick="app.showPortfolioOverview()" 
+                    class="flex flex-col items-center justify-center p-3 border border-green-300 shadow-sm text-xs font-medium rounded-md text-green-700 bg-white hover:bg-green-50 transition-colors">
+                    <i class="fas fa-briefcase text-lg mb-1"></i>
+                    <span class="text-center">Portfolio</span>
+                  </button>
+                  
+                  <button onclick="app.showRiskManagement()" 
+                    class="flex flex-col items-center justify-center p-3 border border-red-300 shadow-sm text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50 transition-colors">
+                    <i class="fas fa-shield-alt text-lg mb-1"></i>
+                    <span class="text-center">Risk Mgmt</span>
+                  </button>
+                  
+                  <button onclick="app.showMarketRegime()" 
+                    class="flex flex-col items-center justify-center p-3 border border-yellow-300 shadow-sm text-xs font-medium rounded-md text-yellow-700 bg-white hover:bg-yellow-50 transition-colors">
+                    <i class="fas fa-globe text-lg mb-1"></i>
+                    <span class="text-center">Market</span>
+                  </button>
+                  
                   <button onclick="app.analyzeNews()" 
-                    class="inline-flex items-center justify-center px-4 py-2 border border-green-300 shadow-sm text-sm font-medium rounded-md text-green-700 bg-white hover:bg-green-50 w-full sm:w-auto">
-                    <i class="fas fa-newspaper mr-2"></i>
-                    Analyze News
+                    class="flex flex-col items-center justify-center p-3 border border-teal-300 shadow-sm text-xs font-medium rounded-md text-teal-700 bg-white hover:bg-teal-50 transition-colors">
+                    <i class="fas fa-newspaper text-lg mb-1"></i>
+                    <span class="text-center">News</span>
+                  </button>
+                  
+                  <button onclick="app.showPositionSizing()" 
+                    class="flex flex-col items-center justify-center p-3 border border-pink-300 shadow-sm text-xs font-medium rounded-md text-pink-700 bg-white hover:bg-pink-50 transition-colors">
+                    <i class="fas fa-calculator text-lg mb-1"></i>
+                    <span class="text-center">Position</span>
+                  </button>
+                  
+                  <button onclick="app.generateRecommendations()" 
+                    class="flex flex-col items-center justify-center p-3 border border-indigo-300 shadow-sm text-xs font-medium rounded-md text-indigo-700 bg-white hover:bg-indigo-50 transition-colors">
+                    <i class="fas fa-lightbulb text-lg mb-1"></i>
+                    <span class="text-center">Basic Recs</span>
                   </button>
                 </div>
               </div>
@@ -853,6 +891,747 @@ class TraderApp {
     if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`
     if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`
     return date.toLocaleDateString()
+  }
+
+  // ============ ADVANCED AI FEATURES ============
+
+  async showAIAnalysisResults(data) {
+    const modalHtml = `
+      <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" id="ai-analysis-modal">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-6xl shadow-lg rounded-md bg-white">
+          <div class="mt-3">
+            <div class="flex justify-between items-center mb-6">
+              <h3 class="text-2xl font-bold text-gray-900">
+                <i class="fas fa-brain text-purple-600 mr-3"></i>
+                Advanced AI Portfolio Analysis
+              </h3>
+              <button onclick="document.getElementById('ai-analysis-modal').remove()" 
+                class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+              </button>
+            </div>
+            
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div class="bg-blue-50 p-4 rounded-lg">
+                <div class="text-sm font-medium text-blue-600">Total Recommendations</div>
+                <div class="text-2xl font-bold text-blue-900">${data.summary.total_recommendations}</div>
+              </div>
+              <div class="bg-green-50 p-4 rounded-lg">
+                <div class="text-sm font-medium text-green-600">Buy Signals</div>
+                <div class="text-2xl font-bold text-green-900">${data.summary.buy_signals}</div>
+              </div>
+              <div class="bg-red-50 p-4 rounded-lg">
+                <div class="text-sm font-medium text-red-600">Sell Signals</div>
+                <div class="text-2xl font-bold text-red-900">${data.summary.sell_signals}</div>
+              </div>
+              <div class="bg-purple-50 p-4 rounded-lg">
+                <div class="text-sm font-medium text-purple-600">Avg Confidence</div>
+                <div class="text-2xl font-bold text-purple-900">${(data.summary.avg_confidence * 100).toFixed(1)}%</div>
+              </div>
+            </div>
+            
+            <!-- Recommendations List -->
+            <div class="space-y-4 max-h-96 overflow-y-auto">
+              ${data.recommendations.map(rec => `
+                <div class="border rounded-lg p-4 ${this.getAIActionColor(rec.action)}">
+                  <div class="flex justify-between items-start mb-3">
+                    <div class="flex items-center space-x-3">
+                      <span class="text-lg font-bold">${rec.symbol}</span>
+                      <span class="px-3 py-1 rounded-full text-sm font-medium ${this.getActionBadgeColor(rec.action)}">${rec.action}</span>
+                      <span class="text-sm text-gray-600">Confidence: ${(rec.confidence_level * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="text-right">
+                      <div class="text-sm text-gray-600">Position Size</div>
+                      <div class="font-bold">${(rec.position_size * 100).toFixed(1)}%</div>
+                    </div>
+                  </div>
+                  
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                    <div>
+                      <div class="text-xs text-gray-500">Entry Price</div>
+                      <div class="font-semibold">$${rec.entry_price.toFixed(2)}</div>
+                    </div>
+                    <div>
+                      <div class="text-xs text-gray-500">Target Prices</div>
+                      <div class="font-semibold">$${rec.target_prices.join(', $')}</div>
+                    </div>
+                    <div>
+                      <div class="text-xs text-gray-500">Stop Loss</div>
+                      <div class="font-semibold">$${rec.stop_loss.toFixed(2)}</div>
+                    </div>
+                  </div>
+                  
+                  <div class="space-y-2">
+                    <div class="text-sm">
+                      <span class="font-medium">Risk/Reward:</span> ${rec.risk_reward_ratio.toFixed(1)}:1
+                      <span class="ml-4 font-medium">Time Horizon:</span> ${rec.time_horizon}
+                      <span class="ml-4 font-medium">Success Probability:</span> ${(rec.probability_of_success * 100).toFixed(1)}%
+                    </div>
+                    
+                    <!-- Reasoning -->
+                    <div class="bg-gray-50 p-3 rounded text-sm">
+                      <div class="font-medium mb-2">Analysis Reasoning:</div>
+                      <div class="space-y-1">
+                        ${rec.reasoning.technical_factors?.map(factor => `<div>• <span class="text-blue-700">Technical:</span> ${factor}</div>`).join('') || ''}
+                        ${rec.reasoning.sentiment_factors?.map(factor => `<div>• <span class="text-green-700">Sentiment:</span> ${factor}</div>`).join('') || ''}
+                        ${rec.reasoning.risk_factors?.map(factor => `<div>• <span class="text-red-700">Risk:</span> ${factor}</div>`).join('') || ''}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+    `
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml)
+  }
+
+  async showTechnicalAnalysis() {
+    const symbol = prompt('Enter symbol for technical analysis (e.g., AAPL):')
+    if (!symbol) return
+    
+    try {
+      const response = await axios.get(`/api/advanced/technical-analysis/${symbol.toUpperCase()}`)
+      
+      if (response.data.success) {
+        const analysis = response.data.analysis
+        this.showTechnicalAnalysisModal(symbol, analysis)
+      } else {
+        throw new Error(response.data.error)
+      }
+    } catch (error) {
+      console.error('Technical analysis error:', error)
+      this.showNotification('Technical analysis failed: ' + (error.response?.data?.error || error.message), 'error')
+    }
+  }
+
+  showTechnicalAnalysisModal(symbol, analysis) {
+    const modalHtml = `
+      <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" id="technical-modal">
+        <div class="relative top-10 mx-auto p-5 border w-11/12 max-w-6xl shadow-lg rounded-md bg-white">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-2xl font-bold text-gray-900">
+              <i class="fas fa-chart-line text-blue-600 mr-3"></i>
+              Technical Analysis - ${symbol}
+            </h3>
+            <button onclick="document.getElementById('technical-modal').remove()" class="text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+          
+          <!-- Setup Quality Score -->
+          <div class="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg mb-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="text-lg font-semibold">Setup Quality Score</h4>
+                <p class="text-gray-600">Overall trading setup quality assessment</p>
+              </div>
+              <div class="text-right">
+                <div class="text-4xl font-bold ${analysis.setup_quality.score > 70 ? 'text-green-600' : analysis.setup_quality.score > 40 ? 'text-yellow-600' : 'text-red-600'}">
+                  ${analysis.setup_quality.score}/100
+                </div>
+                <div class="text-sm text-gray-500">Risk/Reward: ${analysis.setup_quality.risk_reward.toFixed(1)}:1</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Timeframe Analysis -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            ${Object.entries(analysis.timeframes).map(([tf, data]) => `
+              <div class="border rounded-lg p-4">
+                <div class="flex justify-between items-center mb-3">
+                  <h5 class="font-semibold">${tf.toUpperCase()}</h5>
+                  <span class="px-2 py-1 rounded text-xs font-medium ${data.signal_direction === 'buy' ? 'bg-green-100 text-green-800' : data.signal_direction === 'sell' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}">
+                    ${data.signal_direction.toUpperCase()}
+                  </span>
+                </div>
+                
+                <div class="space-y-2 text-sm">
+                  <div>Trend: <span class="font-medium">${data.trend.direction}</span></div>
+                  <div>Strength: <span class="font-medium">${(data.trend.strength * 100).toFixed(0)}%</span></div>
+                  <div>Signal: <span class="font-medium">${(data.signal_strength * 100).toFixed(0)}%</span></div>
+                  <div class="text-xs text-gray-600">RSI: ${data.indicators.rsi.toFixed(1)}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+          
+          <!-- Overall Trend -->
+          <div class="bg-gray-50 p-4 rounded-lg mb-6">
+            <h5 class="font-semibold mb-3">Overall Trend Analysis</h5>
+            <div class="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <div class="text-sm text-gray-600">Short Term</div>
+                <div class="font-bold ${analysis.overall_trend.short_term === 'bullish' ? 'text-green-600' : analysis.overall_trend.short_term === 'bearish' ? 'text-red-600' : 'text-gray-600'}">${analysis.overall_trend.short_term}</div>
+              </div>
+              <div>
+                <div class="text-sm text-gray-600">Medium Term</div>
+                <div class="font-bold ${analysis.overall_trend.medium_term === 'bullish' ? 'text-green-600' : analysis.overall_trend.medium_term === 'bearish' ? 'text-red-600' : 'text-gray-600'}">${analysis.overall_trend.medium_term}</div>
+              </div>
+              <div>
+                <div class="text-sm text-gray-600">Long Term</div>
+                <div class="font-bold ${analysis.overall_trend.long_term === 'bullish' ? 'text-green-600' : analysis.overall_trend.long_term === 'bearish' ? 'text-red-600' : 'text-gray-600'}">${analysis.overall_trend.long_term}</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Key Levels -->
+          <div class="grid grid-cols-2 gap-4">
+            <div class="border rounded-lg p-4">
+              <h5 class="font-semibold mb-3 text-green-600">Support Levels</h5>
+              <div class="space-y-1">
+                ${analysis.critical_levels.major_support.map(level => `<div class="text-sm">$${level.toFixed(2)}</div>`).join('')}
+              </div>
+            </div>
+            <div class="border rounded-lg p-4">
+              <h5 class="font-semibold mb-3 text-red-600">Resistance Levels</h5>
+              <div class="space-y-1">
+                ${analysis.critical_levels.major_resistance.map(level => `<div class="text-sm">$${level.toFixed(2)}</div>`).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml)
+  }
+
+  async showPortfolioOverview() {
+    try {
+      const portfoliosResponse = await axios.get('/api/portfolios')
+      if (!portfoliosResponse.data.success || !portfoliosResponse.data.data.length) {
+        this.showNotification('No portfolios found. Please create a portfolio first.', 'error')
+        return
+      }
+      
+      const portfolioId = portfoliosResponse.data.data[0].id
+      const response = await axios.get(`/api/advanced/portfolio/${portfolioId}/overview`)
+      
+      if (response.data.success) {
+        this.showPortfolioOverviewModal(response.data)
+      } else {
+        throw new Error(response.data.error)
+      }
+    } catch (error) {
+      console.error('Portfolio overview error:', error)
+      this.showNotification('Portfolio overview failed: ' + (error.response?.data?.error || error.message), 'error')
+    }
+  }
+
+  showPortfolioOverviewModal(data) {
+    const metrics = data.metrics
+    const positions = data.positions
+    
+    const modalHtml = `
+      <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" id="portfolio-modal">
+        <div class="relative top-10 mx-auto p-5 border w-11/12 max-w-6xl shadow-lg rounded-md bg-white">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-2xl font-bold text-gray-900">
+              <i class="fas fa-briefcase text-green-600 mr-3"></i>
+              Portfolio Overview
+            </h3>
+            <button onclick="document.getElementById('portfolio-modal').remove()" class="text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+          
+          <!-- Portfolio Metrics -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-blue-50 p-4 rounded-lg">
+              <div class="text-sm font-medium text-blue-600">Total Value</div>
+              <div class="text-2xl font-bold text-blue-900">$${metrics.total_value.toLocaleString()}</div>
+              <div class="text-sm ${metrics.day_change >= 0 ? 'text-green-600' : 'text-red-600'}">
+                ${metrics.day_change >= 0 ? '+' : ''}${metrics.day_change_pct.toFixed(2)}% today
+              </div>
+            </div>
+            
+            <div class="bg-green-50 p-4 rounded-lg">
+              <div class="text-sm font-medium text-green-600">Total Return</div>
+              <div class="text-2xl font-bold text-green-900">${metrics.total_return_pct.toFixed(1)}%</div>
+              <div class="text-sm text-gray-600">Annualized: ${metrics.annualized_return.toFixed(1)}%</div>
+            </div>
+            
+            <div class="bg-purple-50 p-4 rounded-lg">
+              <div class="text-sm font-medium text-purple-600">Sharpe Ratio</div>
+              <div class="text-2xl font-bold text-purple-900">${metrics.sharpe_ratio.toFixed(2)}</div>
+              <div class="text-sm text-gray-600">Win Rate: ${metrics.win_rate.toFixed(1)}%</div>
+            </div>
+            
+            <div class="bg-red-50 p-4 rounded-lg">
+              <div class="text-sm font-medium text-red-600">Max Drawdown</div>
+              <div class="text-2xl font-bold text-red-900">${Math.abs(metrics.max_drawdown).toFixed(1)}%</div>
+              <div class="text-sm text-gray-600">VaR 95%: ${metrics.var_95.toFixed(1)}%</div>
+            </div>
+          </div>
+          
+          <!-- Positions -->
+          <div class="mb-6">
+            <h4 class="text-lg font-semibold mb-4">Current Positions (${positions.length})</h4>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Symbol</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avg Price</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Current Price</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">P&L</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">% of Portfolio</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  ${positions.map(pos => `
+                    <tr>
+                      <td class="px-6 py-4 text-sm font-medium text-gray-900">${pos.symbol}</td>
+                      <td class="px-6 py-4 text-sm text-gray-500">${pos.quantity.toLocaleString()}</td>
+                      <td class="px-6 py-4 text-sm text-gray-500">$${pos.avg_entry_price.toFixed(2)}</td>
+                      <td class="px-6 py-4 text-sm text-gray-500">$${pos.current_price.toFixed(2)}</td>
+                      <td class="px-6 py-4 text-sm ${pos.unrealized_pnl >= 0 ? 'text-green-600' : 'text-red-600'}">
+                        ${pos.unrealized_pnl >= 0 ? '+' : ''}$${pos.unrealized_pnl.toFixed(0)} (${pos.unrealized_pnl_pct.toFixed(1)}%)
+                      </td>
+                      <td class="px-6 py-4 text-sm text-gray-500">${pos.position_size_pct.toFixed(1)}%</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <!-- Risk Alerts -->
+          ${data.risk_alerts && data.risk_alerts.length > 0 ? `
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <h4 class="text-lg font-semibold text-yellow-800 mb-3">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                Risk Alerts (${data.risk_alerts.length})
+              </h4>
+              <div class="space-y-2">
+                ${data.risk_alerts.map(alert => `
+                  <div class="text-sm">
+                    <span class="font-medium">${alert.title}:</span> ${alert.description}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    `
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml)
+  }
+
+  async showRiskManagement() {
+    try {
+      const portfoliosResponse = await axios.get('/api/portfolios')
+      if (!portfoliosResponse.data.success || !portfoliosResponse.data.data.length) {
+        this.showNotification('No portfolios found. Please create a portfolio first.', 'error')
+        return
+      }
+      
+      const portfolioId = portfoliosResponse.data.data[0].id
+      const response = await axios.get(`/api/advanced/portfolio/${portfolioId}/risk-metrics`)
+      
+      if (response.data.success) {
+        this.showRiskManagementModal(response.data)
+      } else {
+        throw new Error(response.data.error)
+      }
+    } catch (error) {
+      console.error('Risk management error:', error)
+      this.showNotification('Risk analysis failed: ' + (error.response?.data?.error || error.message), 'error')
+    }
+  }
+
+  showRiskManagementModal(data) {
+    const metrics = data.risk_metrics
+    const alerts = data.risk_alerts
+    
+    const modalHtml = `
+      <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" id="risk-modal">
+        <div class="relative top-10 mx-auto p-5 border w-11/12 max-w-6xl shadow-lg rounded-md bg-white">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-2xl font-bold text-gray-900">
+              <i class="fas fa-shield-alt text-red-600 mr-3"></i>
+              Risk Management Dashboard
+            </h3>
+            <button onclick="document.getElementById('risk-modal').remove()" class="text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+          
+          <!-- Risk Metrics Grid -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-red-50 p-4 rounded-lg">
+              <div class="text-sm font-medium text-red-600">Value at Risk (95%)</div>
+              <div class="text-2xl font-bold text-red-900">${metrics.portfolio_var_95.toFixed(2)}%</div>
+              <div class="text-xs text-gray-600">1-day estimate: ${metrics.estimated_1d_risk.toFixed(2)}%</div>
+            </div>
+            
+            <div class="bg-orange-50 p-4 rounded-lg">
+              <div class="text-sm font-medium text-orange-600">Portfolio Beta</div>
+              <div class="text-2xl font-bold text-orange-900">${metrics.portfolio_beta.toFixed(2)}</div>
+              <div class="text-xs text-gray-600">Market correlation: ${(metrics.market_correlation * 100).toFixed(0)}%</div>
+            </div>
+            
+            <div class="bg-yellow-50 p-4 rounded-lg">
+              <div class="text-sm font-medium text-yellow-600">Volatility</div>
+              <div class="text-2xl font-bold text-yellow-900">${metrics.volatility.toFixed(1)}%</div>
+              <div class="text-xs text-gray-600">Annualized</div>
+            </div>
+            
+            <div class="bg-purple-50 p-4 rounded-lg">
+              <div class="text-sm font-medium text-purple-600">Concentration Risk</div>
+              <div class="text-2xl font-bold text-purple-900">${metrics.single_position_risk.toFixed(1)}%</div>
+              <div class="text-xs text-gray-600">Largest position</div>
+            </div>
+          </div>
+          
+          <!-- Risk-Adjusted Returns -->
+          <div class="bg-gray-50 p-4 rounded-lg mb-6">
+            <h4 class="font-semibold mb-3">Risk-Adjusted Returns</h4>
+            <div class="grid grid-cols-3 gap-4">
+              <div class="text-center">
+                <div class="text-sm text-gray-600">Sharpe Ratio</div>
+                <div class="text-xl font-bold">${metrics.sharpe_ratio.toFixed(2)}</div>
+              </div>
+              <div class="text-center">
+                <div class="text-sm text-gray-600">Sortino Ratio</div>
+                <div class="text-xl font-bold">${metrics.sortino_ratio.toFixed(2)}</div>
+              </div>
+              <div class="text-center">
+                <div class="text-sm text-gray-600">Calmar Ratio</div>
+                <div class="text-xl font-bold">${metrics.calmar_ratio.toFixed(2)}</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Risk Alerts -->
+          ${alerts && alerts.length > 0 ? `
+            <div class="mb-6">
+              <h4 class="font-semibold mb-3">Active Risk Alerts</h4>
+              <div class="space-y-3">
+                ${alerts.map(alert => `
+                  <div class="border-l-4 ${alert.severity === 'critical' ? 'border-red-500 bg-red-50' : alert.severity === 'high' ? 'border-orange-500 bg-orange-50' : 'border-yellow-500 bg-yellow-50'} p-4">
+                    <div class="flex justify-between items-start">
+                      <div>
+                        <h5 class="font-medium">${alert.title}</h5>
+                        <p class="text-sm text-gray-600 mt-1">${alert.message}</p>
+                      </div>
+                      <span class="px-2 py-1 rounded text-xs font-medium ${alert.severity === 'critical' ? 'bg-red-100 text-red-800' : alert.severity === 'high' ? 'bg-orange-100 text-orange-800' : 'bg-yellow-100 text-yellow-800'}">
+                        ${alert.severity.toUpperCase()}
+                      </span>
+                    </div>
+                    ${alert.recommended_actions && alert.recommended_actions.length > 0 ? `
+                      <div class="mt-3">
+                        <div class="text-sm font-medium">Recommended Actions:</div>
+                        <ul class="text-sm text-gray-600 mt-1 space-y-1">
+                          ${alert.recommended_actions.map(action => `<li>• ${action}</li>`).join('')}
+                        </ul>
+                      </div>
+                    ` : ''}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+          
+          <!-- Sector Exposure -->
+          <div>
+            <h4 class="font-semibold mb-3">Sector Exposure</h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              ${Object.entries(metrics.sector_concentration).map(([sector, allocation]) => `
+                <div class="text-center p-3 border rounded">
+                  <div class="text-sm text-gray-600">${sector}</div>
+                  <div class="text-lg font-bold">${allocation.toFixed(1)}%</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+    `
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml)
+  }
+
+  async showMarketRegime() {
+    try {
+      const response = await axios.get('/api/advanced/market/regime')
+      
+      if (response.data.success) {
+        this.showMarketRegimeModal(response.data.regime_analysis)
+      } else {
+        throw new Error(response.data.error)
+      }
+    } catch (error) {
+      console.error('Market regime error:', error)
+      this.showNotification('Market regime analysis failed: ' + (error.response?.data?.error || error.message), 'error')
+    }
+  }
+
+  showMarketRegimeModal(data) {
+    const modalHtml = `
+      <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" id="regime-modal">
+        <div class="relative top-10 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-2xl font-bold text-gray-900">
+              <i class="fas fa-globe text-yellow-600 mr-3"></i>
+              Market Regime Analysis
+            </h3>
+            <button onclick="document.getElementById('regime-modal').remove()" class="text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+          
+          <!-- Current Regime -->
+          <div class="text-center mb-6 p-6 ${data.current_regime === 'bull' ? 'bg-green-50 border border-green-200' : data.current_regime === 'bear' ? 'bg-red-50 border border-red-200' : 'bg-yellow-50 border border-yellow-200'} rounded-lg">
+            <h4 class="text-3xl font-bold mb-2 ${data.current_regime === 'bull' ? 'text-green-600' : data.current_regime === 'bear' ? 'text-red-600' : 'text-yellow-600'}">${data.current_regime.toUpperCase()} MARKET</h4>
+            <p class="text-lg">Confidence: ${(data.confidence * 100).toFixed(1)}%</p>
+            <p class="text-sm text-gray-600">Duration: ${data.regime_duration_days} days</p>
+          </div>
+          
+          <!-- Regime Probabilities -->
+          <div class="grid grid-cols-3 gap-4 mb-6">
+            <div class="text-center p-4 border rounded-lg">
+              <div class="text-lg font-bold text-green-600">${(data.regime_probability.bull * 100).toFixed(1)}%</div>
+              <div class="text-sm text-gray-600">Bull Market</div>
+            </div>
+            <div class="text-center p-4 border rounded-lg">
+              <div class="text-lg font-bold text-red-600">${(data.regime_probability.bear * 100).toFixed(1)}%</div>
+              <div class="text-sm text-gray-600">Bear Market</div>
+            </div>
+            <div class="text-center p-4 border rounded-lg">
+              <div class="text-lg font-bold text-yellow-600">${(data.regime_probability.sideways * 100).toFixed(1)}%</div>
+              <div class="text-sm text-gray-600">Sideways</div>
+            </div>
+          </div>
+          
+          <!-- Market Indicators -->
+          <div class="grid grid-cols-2 gap-6 mb-6">
+            <div>
+              <h4 class="font-semibold mb-3">Market Indicators</h4>
+              <div class="space-y-2 text-sm">
+                <div>VIX Level: <span class="font-medium">${data.market_indicators.vix_level.toFixed(1)}</span></div>
+                <div>SPY Trend: <span class="font-medium ${data.market_indicators.spy_trend === 'up' ? 'text-green-600' : 'text-red-600'}">${data.market_indicators.spy_trend}</span></div>
+                <div>Advancing Stocks: <span class="font-medium">${data.market_indicators.breadth_indicators.advancing_stocks_pct.toFixed(1)}%</span></div>
+                <div>Volume Trend: <span class="font-medium">${data.market_indicators.breadth_indicators.volume_trend}</span></div>
+              </div>
+            </div>
+            
+            <div>
+              <h4 class="font-semibold mb-3">Trading Recommendations</h4>
+              <div class="space-y-2 text-sm">
+                <div>Position Sizing: <span class="font-medium">${data.trading_recommendations.position_sizing_adjustment}</span></div>
+                <div>Sector Focus: <span class="font-medium">${data.trading_recommendations.sector_focus}</span></div>
+                <div>Strategy: <span class="font-medium">${data.trading_recommendations.volatility_strategy.replace('_', ' ')}</span></div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Sector Rotation -->
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <h4 class="font-semibold mb-3">Current Sector Rotation</h4>
+            <div class="flex flex-wrap gap-2">
+              ${data.market_indicators.sector_rotation.map(sector => `
+                <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">${sector}</span>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+    `
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml)
+  }
+
+  async showPositionSizing() {
+    const modalHtml = `
+      <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" id="position-sizing-modal">
+        <div class="relative top-10 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-2xl font-bold text-gray-900">
+              <i class="fas fa-calculator text-pink-600 mr-3"></i>
+              Position Sizing Calculator
+            </h3>
+            <button onclick="document.getElementById('position-sizing-modal').remove()" class="text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+          
+          <form id="position-sizing-form" class="space-y-6">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Symbol</label>
+                <input type="text" id="ps-symbol" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="AAPL" required>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Entry Price ($)</label>
+                <input type="number" id="ps-entry" class="w-full px-3 py-2 border border-gray-300 rounded-md" step="0.01" required>
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Target Price ($)</label>
+                <input type="number" id="ps-target" class="w-full px-3 py-2 border border-gray-300 rounded-md" step="0.01" required>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Stop Loss ($)</label>
+                <input type="number" id="ps-stop" class="w-full px-3 py-2 border border-gray-300 rounded-md" step="0.01" required>
+              </div>
+            </div>
+            
+            <div>
+              <button type="submit" class="w-full bg-pink-600 text-white py-3 px-4 rounded-md hover:bg-pink-700">
+                <i class="fas fa-calculator mr-2"></i>Calculate Position Size
+              </button>
+            </div>
+          </form>
+          
+          <div id="position-sizing-results" class="mt-6 hidden">
+            <!-- Results will be populated here -->
+          </div>
+        </div>
+      </div>
+    `
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml)
+    
+    // Add form handler
+    document.getElementById('position-sizing-form').addEventListener('submit', (e) => {
+      e.preventDefault()
+      this.calculatePositionSize()
+    })
+  }
+
+  async calculatePositionSize() {
+    try {
+      const portfoliosResponse = await axios.get('/api/portfolios')
+      if (!portfoliosResponse.data.success || !portfoliosResponse.data.data.length) {
+        this.showNotification('No portfolios found. Please create a portfolio first.', 'error')
+        return
+      }
+      
+      const portfolioId = portfoliosResponse.data.data[0].id
+      const symbol = document.getElementById('ps-symbol').value.toUpperCase()
+      const entryPrice = parseFloat(document.getElementById('ps-entry').value)
+      const targetPrice = parseFloat(document.getElementById('ps-target').value)
+      const stopLoss = parseFloat(document.getElementById('ps-stop').value)
+      
+      const response = await axios.post('/api/advanced/risk/position-sizing', {
+        portfolio_id: portfolioId,
+        symbol,
+        entry_price: entryPrice,
+        target_price: targetPrice,
+        stop_loss: stopLoss
+      })
+      
+      if (response.data.success) {
+        this.showPositionSizingResults(response.data.position_sizing)
+      } else {
+        throw new Error(response.data.error)
+      }
+    } catch (error) {
+      console.error('Position sizing error:', error)
+      this.showNotification('Position sizing failed: ' + (error.response?.data?.error || error.message), 'error')
+    }
+  }
+
+  showPositionSizingResults(data) {
+    const resultsHtml = `
+      <div class="border-t pt-6">
+        <h4 class="text-lg font-semibold mb-4">Position Sizing Results</h4>
+        
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div class="bg-blue-50 p-4 rounded-lg text-center">
+            <div class="text-sm font-medium text-blue-600">Recommended Shares</div>
+            <div class="text-2xl font-bold text-blue-900">${data.recommended_shares.toLocaleString()}</div>
+          </div>
+          
+          <div class="bg-green-50 p-4 rounded-lg text-center">
+            <div class="text-sm font-medium text-green-600">Dollar Amount</div>
+            <div class="text-2xl font-bold text-green-900">$${data.recommended_dollar_amount.toLocaleString()}</div>
+          </div>
+          
+          <div class="bg-purple-50 p-4 rounded-lg text-center">
+            <div class="text-sm font-medium text-purple-600">Position Size</div>
+            <div class="text-2xl font-bold text-purple-900">${data.position_size_pct.toFixed(1)}%</div>
+          </div>
+          
+          <div class="bg-red-50 p-4 rounded-lg text-center">
+            <div class="text-sm font-medium text-red-600">Total Risk</div>
+            <div class="text-2xl font-bold text-red-900">$${data.total_position_risk.toFixed(0)}</div>
+          </div>
+        </div>
+        
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <div class="text-sm font-medium mb-2">Sizing Method: ${data.sizing_method}</div>
+          <div class="space-y-1 text-sm text-gray-600">
+            ${data.reasoning.map(reason => `<div>• ${reason}</div>`).join('')}
+          </div>
+        </div>
+      </div>
+    `
+    
+    document.getElementById('position-sizing-results').innerHTML = resultsHtml
+    document.getElementById('position-sizing-results').classList.remove('hidden')
+  }
+
+  // Helper methods for styling
+  getAIActionColor(action) {
+    switch (action) {
+      case 'BUY': return 'border-green-200 bg-green-50'
+      case 'SELL': return 'border-red-200 bg-red-50'
+      case 'HOLD': return 'border-gray-200 bg-gray-50'
+      case 'REDUCE': return 'border-orange-200 bg-orange-50'
+      case 'INCREASE': return 'border-blue-200 bg-blue-50'
+      default: return 'border-gray-200 bg-white'
+    }
+  }
+
+  getActionBadgeColor(action) {
+    switch (action) {
+      case 'BUY': return 'bg-green-100 text-green-800'
+      case 'SELL': return 'bg-red-100 text-red-800'  
+      case 'HOLD': return 'bg-gray-100 text-gray-800'
+      case 'REDUCE': return 'bg-orange-100 text-orange-800'
+      case 'INCREASE': return 'bg-blue-100 text-blue-800'
+      default: return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  showNotification(message, type = 'info') {
+    const colors = {
+      success: 'bg-green-100 border-green-400 text-green-700',
+      error: 'bg-red-100 border-red-400 text-red-700',
+      warning: 'bg-yellow-100 border-yellow-400 text-yellow-700',
+      info: 'bg-blue-100 border-blue-400 text-blue-700'
+    }
+    
+    const notification = document.createElement('div')
+    notification.className = `fixed top-4 right-4 max-w-sm p-4 border rounded-md ${colors[type]} z-50`
+    notification.innerHTML = `
+      <div class="flex justify-between items-start">
+        <div class="text-sm">${message}</div>
+        <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-current opacity-50 hover:opacity-75">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    `
+    
+    document.body.appendChild(notification)
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      if (notification.parentElement) {
+        notification.remove()
+      }
+    }, 5000)
   }
 }
 
