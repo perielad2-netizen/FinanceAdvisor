@@ -114,22 +114,48 @@ export class NotificationService {
    * Send Web Push Notification
    */
   private async sendPushNotification(subscription: any, data: any): Promise<void> {
-    // Note: In a real implementation, you'd need VAPID keys and a push service
-    // For now, we'll simulate this or use a service like OneSignal
-    console.log('📱 Sending push notification:', data.title)
-    
-    // This would integrate with Web Push Protocol
-    // For demo purposes, we'll log it
-    const payload = {
-      title: data.title,
-      body: data.body,
-      icon: '/static/favicon.ico',
-      data: data
-    }
+    try {
+      console.log('📱 Sending push notification:', data.title)
+      
+      // Check if we have VAPID keys
+      if (!this.env.VAPID_PUBLIC_KEY || !this.env.VAPID_PRIVATE_KEY) {
+        console.warn('⚠️ VAPID keys not configured, skipping push notification')
+        return
+      }
 
-    // In production, you'd use something like:
-    // await webpush.sendNotification(subscription, JSON.stringify(payload))
-    console.log('📱 Push payload:', payload)
+      // Import web-push dynamically (Cloudflare Workers compatible)
+      const webpush = await import('web-push')
+      
+      // Set VAPID details
+      webpush.setVapidDetails(
+        this.env.VAPID_SUBJECT || 'mailto:admin@yourapp.com',
+        this.env.VAPID_PUBLIC_KEY,
+        this.env.VAPID_PRIVATE_KEY
+      )
+
+      // Prepare payload
+      const payload = {
+        title: data.title,
+        body: data.body,
+        icon: '/static/favicon.ico',
+        badge: '/static/favicon.ico',
+        tag: 'trading-recommendation',
+        requireInteraction: true,
+        data: {
+          url: '/',
+          timestamp: Date.now(),
+          ...data
+        }
+      }
+
+      // Send the notification
+      await webpush.sendNotification(subscription, JSON.stringify(payload))
+      
+      console.log('✅ Push notification sent successfully')
+    } catch (error) {
+      console.error('❌ Failed to send push notification:', error)
+      throw error
+    }
   }
 
   /**
@@ -234,22 +260,36 @@ export class NotificationService {
    */
   async savePushSubscription(userId: string, subscription: any): Promise<boolean> {
     try {
-      // Update or insert push subscription
-      await this.env.DB.prepare(`
-        INSERT INTO user_preferences (
-          user_id, push_notifications, push_subscription
-        ) VALUES (?, ?, ?)
-        ON CONFLICT(user_id) DO UPDATE SET
-          push_notifications = ?,
-          push_subscription = ?,
-          updated_at = CURRENT_TIMESTAMP
-      `).bind(
-        userId,
-        true,
-        JSON.stringify(subscription),
-        true,
-        JSON.stringify(subscription)
-      ).run()
+      // Check if user preferences exist
+      const existingPrefs = await this.env.DB.prepare(`
+        SELECT id FROM user_preferences WHERE user_id = ?
+      `).bind(userId).first()
+
+      if (existingPrefs) {
+        // Update existing record
+        await this.env.DB.prepare(`
+          UPDATE user_preferences 
+          SET push_notifications = ?, 
+              push_subscription = ?,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE user_id = ?
+        `).bind(
+          true,
+          JSON.stringify(subscription),
+          userId
+        ).run()
+      } else {
+        // Insert new record
+        await this.env.DB.prepare(`
+          INSERT INTO user_preferences (
+            user_id, push_notifications, push_subscription
+          ) VALUES (?, ?, ?)
+        `).bind(
+          userId,
+          true,
+          JSON.stringify(subscription)
+        ).run()
+      }
 
       console.log('✅ Push subscription saved for user:', userId)
       return true

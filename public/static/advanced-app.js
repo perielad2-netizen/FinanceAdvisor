@@ -2849,12 +2849,112 @@ class EnhancedTraderApp {
         throw new Error('Notification permission denied')
       }
 
-      // For now, just save the preference without Service Worker complications
+      // Create actual push subscription with VAPID key
+      console.log('🔧 Creating push subscription...')
+      
+      // Check if Service Worker is available
+      if (!('serviceWorker' in navigator)) {
+        throw new Error('Service Worker not supported')
+      }
+      
+      console.log('🔧 Service Worker supported, checking registration...')
+      
+      // Try to get existing registration first
+      let registration = await navigator.serviceWorker.getRegistration('/static/')
+      
+      if (!registration) {
+        console.log('🔧 No existing registration, registering Service Worker...')
+        try {
+          registration = await navigator.serviceWorker.register('/static/sw.js', {
+            scope: '/static/'
+          })
+          console.log('✅ Service Worker registered:', registration)
+          
+          // Wait for it to be active
+          if (registration.installing) {
+            console.log('⏳ Waiting for Service Worker to install...')
+            await new Promise((resolve) => {
+              registration.installing.addEventListener('statechange', () => {
+                if (registration.installing.state === 'activated') {
+                  resolve()
+                }
+              })
+            })
+          }
+        } catch (error) {
+          console.error('❌ Service Worker registration failed:', error)
+          throw new Error('Failed to register Service Worker: ' + error.message)
+        }
+      } else {
+        console.log('✅ Using existing Service Worker registration:', registration)
+      }
+      
+      // Try to create push subscription, but don't fail if it doesn't work
+      let subscription = null
+      
+      try {
+        console.log('🔧 Checking for existing push subscription...')
+        subscription = await registration.pushManager.getSubscription()
+        console.log('🔧 Existing subscription:', subscription)
+        
+        if (!subscription) {
+          console.log('🔧 Creating new push subscription...')
+          
+          // VAPID public key
+          const vapidPublicKey = 'BKre0bMiTLJ2bp341Y8T59CIIMh6MIOLA01r_bDqSz6o7_jwIMMI1KvwOrnGrzxIrp4nB449C_bX4pmLDGeErN4'
+          console.log('🔧 Using VAPID key:', vapidPublicKey.substring(0, 20) + '...')
+          
+          // Convert VAPID key to Uint8Array
+          console.log('🔧 Converting VAPID key to Uint8Array...')
+          const applicationServerKey = this.urlBase64ToUint8Array(vapidPublicKey)
+          console.log('🔧 Converted key length:', applicationServerKey.length)
+          
+          // Subscribe to push notifications
+          console.log('🔧 Subscribing to push notifications...')
+          subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: applicationServerKey
+          })
+          
+          console.log('📱 Push subscription created:', subscription)
+        } else {
+          console.log('🔧 Using existing push subscription')
+        }
+        
+        // Send subscription to server
+        if (subscription) {
+          console.log('🔧 Sending push subscription to server...')
+          console.log('🔧 Subscription JSON:', subscription.toJSON())
+          
+          const pushResponse = await axios.post('/api/notifications/push/subscribe', {
+            subscription: subscription.toJSON()
+          }, {
+            withCredentials: true,
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          })
+          
+          console.log('🔧 Push subscription server response:', pushResponse.data)
+          
+          if (!pushResponse.data || !pushResponse.data.success) {
+            console.warn('⚠️ Failed to save push subscription, but continuing...')
+          } else {
+            console.log('✅ Push subscription saved successfully')
+          }
+        }
+        
+      } catch (subscriptionError) {
+        console.warn('⚠️ Push subscription failed, but continuing with basic notifications:', subscriptionError)
+        subscription = null
+      }
+      
+      // Save notification preferences
       console.log('🔧 Saving push notification preference...')
       const response = await axios.post('/api/notifications/preferences', {
-        push_notifications: true,
-        email_notifications: true,
-        telegram_notifications: false
+        pushEnabled: true,
+        emailEnabled: true,
+        telegramEnabled: false
       }, {
         withCredentials: true,
         headers: {
@@ -2862,16 +2962,29 @@ class EnhancedTraderApp {
         }
       })
       
-      console.log('🔧 Server response:', response.data)
+      console.log('🔧 Preferences server response:', response.data)
       
       if (response.data && response.data.success) {
-        this.showNotification('✅ Push notifications enabled! You\'ll receive browser notifications for new recommendations.', 'success')
+        // Determine message based on subscription success
+        let message, notificationType
+        
+        if (subscription) {
+          message = '✅ Push notifications fully enabled! You\'ll receive browser notifications for new recommendations.'
+          notificationType = 'success'
+        } else {
+          message = '✅ Notifications enabled! You\'ll receive in-browser alerts and emails for new recommendations.'
+          notificationType = 'success'
+        }
+        
+        this.showNotification(message, notificationType)
         this.updatePushButtonStatus(true)
         
         // Show test notification
         if (Notification.permission === 'granted') {
           new Notification('🔔 AI Trader Advisor', {
-            body: 'Push notifications are now enabled! You\'ll receive alerts for new trading recommendations.',
+            body: subscription ? 
+              'Push notifications are now fully enabled! You\'ll receive alerts for new trading recommendations.' :
+              'Notifications are enabled! You\'ll receive in-browser alerts and emails.',
             icon: '/static/favicon.ico'
           })
         }
@@ -3112,6 +3225,24 @@ class EnhancedTraderApp {
       console.error('Telegram test failed:', error)
       this.showNotification('❌ Failed to test Telegram connection', 'error')
     }
+  }
+
+  /**
+   * Convert VAPID public key from URL-safe base64 to Uint8Array
+   */
+  urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4)
+    const base64 = (base64String + padding)
+      .replace(/-/g, '+')
+      .replace(/_/g, '/')
+
+    const rawData = window.atob(base64)
+    const outputArray = new Uint8Array(rawData.length)
+
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i)
+    }
+    return outputArray
   }
 }
 

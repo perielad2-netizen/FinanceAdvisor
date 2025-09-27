@@ -128,25 +128,39 @@ notificationsRoutes.post('/preferences', async (c) => {
     const { pushEnabled, emailEnabled, telegramEnabled } = await c.req.json()
     console.log('⚙️ Updating notification preferences for user:', payload.user_id)
 
-    // Update preferences
-    await c.env.DB.prepare(`
-      INSERT INTO user_preferences (
-        user_id, push_notifications, email_notifications, telegram_notifications
-      ) VALUES (?, ?, ?, ?)
-      ON CONFLICT(user_id) DO UPDATE SET
-        push_notifications = ?,
-        email_notifications = ?,
-        telegram_notifications = ?,
-        updated_at = CURRENT_TIMESTAMP
-    `).bind(
-      payload.user_id,
-      pushEnabled ? 1 : 0,
-      emailEnabled ? 1 : 0,
-      telegramEnabled ? 1 : 0,
-      pushEnabled ? 1 : 0,
-      emailEnabled ? 1 : 0,
-      telegramEnabled ? 1 : 0
-    ).run()
+    // Check if user preferences exist
+    const existingPrefs = await c.env.DB.prepare(`
+      SELECT id FROM user_preferences WHERE user_id = ?
+    `).bind(payload.user_id).first()
+
+    if (existingPrefs) {
+      // Update existing record
+      await c.env.DB.prepare(`
+        UPDATE user_preferences 
+        SET push_notifications = ?, 
+            email_notifications = ?,
+            telegram_notifications = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = ?
+      `).bind(
+        pushEnabled ? 1 : 0,
+        emailEnabled ? 1 : 0,
+        telegramEnabled ? 1 : 0,
+        payload.user_id
+      ).run()
+    } else {
+      // Insert new record
+      await c.env.DB.prepare(`
+        INSERT INTO user_preferences (
+          user_id, push_notifications, email_notifications, telegram_notifications
+        ) VALUES (?, ?, ?, ?)
+      `).bind(
+        payload.user_id,
+        pushEnabled ? 1 : 0,
+        emailEnabled ? 1 : 0,
+        telegramEnabled ? 1 : 0
+      ).run()
+    }
 
     return c.json<APIResponse>({ 
       success: true, 

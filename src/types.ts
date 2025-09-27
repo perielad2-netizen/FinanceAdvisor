@@ -9,6 +9,16 @@ export type Bindings = {
   TWELVEDATA_API_KEY?: string
   FINNHUB_API_KEY?: string
   POLYGON_API_KEY?: string
+  // Notification services
+  RESEND_API_KEY?: string
+  FROM_EMAIL?: string
+  // Push notifications (VAPID)
+  VAPID_PUBLIC_KEY?: string
+  VAPID_PRIVATE_KEY?: string
+  VAPID_SUBJECT?: string
+  // Telegram (legacy)
+  TELEGRAM_BOT_TOKEN?: string
+  TELEGRAM_CHAT_ID?: string
 }
 
 export type Variables = {

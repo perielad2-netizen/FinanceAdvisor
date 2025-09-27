@@ -165,7 +165,7 @@ self.addEventListener('pushsubscriptionchange', (event) => {
     // Re-subscribe the user
     self.registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: null // You'll need to set your VAPID public key here
+      applicationServerKey: 'BKre0bMiTLJ2bp341Y8T59CIIMh6MIOLA01r_bDqSz6o7_jwIMMI1KvwOrnGrzxIrp4nB449C_bX4pmLDGeErN4'
     }).then((subscription) => {
       // Send new subscription to server
       return fetch('/api/notifications/push/subscribe', {

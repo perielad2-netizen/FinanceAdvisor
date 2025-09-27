@@ -24,19 +24,20 @@
     "git:log": "git log --oneline"
   },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "hono": "^4.9.7",
     "hono-rate-limiter": "^0.4.0",
-    "bcryptjs": "^2.4.3",
-    "zod": "^3.23.0",
-    "jose": "^5.8.0"
+    "jose": "^5.8.0",
+    "web-push": "^3.6.7",
+    "zod": "^3.23.0"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240909.0",
     "@hono/vite-build": "^1.2.0",
     "@hono/vite-dev-server": "^0.18.2",
-    "vite": "^6.3.5",
-    "wrangler": "^4.4.0",
-    "@cloudflare/workers-types": "^4.20240909.0",
     "@types/bcryptjs": "^2.4.6",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vite": "^6.3.5",
+    "wrangler": "^4.4.0"
   }
 }
