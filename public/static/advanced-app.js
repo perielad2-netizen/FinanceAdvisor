@@ -528,8 +528,29 @@ class EnhancedTraderApp {
 
   async showDashboard() {
     const content = document.getElementById('main-content')
+    
+    // Load user portfolios first
+    await this.loadUserPortfolios()
+    
     content.innerHTML = `
       <div class="space-y-6">
+        <!-- Portfolio Selector -->
+        <div class="bg-white rounded-lg shadow p-4">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <i class="fas fa-briefcase text-blue-600"></i>
+              <select id="portfolio-selector" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                ${this.portfolios.length ? this.portfolios.map(p => 
+                  `<option value="${p.id}" ${p.id === this.selectedPortfolioId ? 'selected' : ''}>${p.name} (${p.base_currency})</option>`
+                ).join('') : '<option value="">No portfolios found</option>'}
+              </select>
+            </div>
+            <button id="create-portfolio-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+              <i class="fas fa-plus mr-2"></i>Create Portfolio
+            </button>
+          </div>
+        </div>
+        
         <!-- Quick Stats Cards -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           <div class="bg-white rounded-lg shadow p-3 sm:p-6">
@@ -539,7 +560,7 @@ class EnhancedTraderApp {
               </div>
               <div class="ml-2 sm:ml-4 min-w-0 flex-1">
                 <p class="text-xs sm:text-sm font-medium text-gray-500 truncate">Portfolio</p>
-                <p id="portfolio-value" class="text-lg sm:text-2xl font-semibold text-gray-900">$125,430</p>
+                <p id="portfolio-value" class="text-lg sm:text-2xl font-semibold text-gray-900">$${this.getCurrentPortfolioValue()}</p>
               </div>
             </div>
           </div>
@@ -710,6 +731,9 @@ class EnhancedTraderApp {
     document.getElementById('stop-scheduler-btn').addEventListener('click', () => this.stopScheduler())
     document.getElementById('test-telegram-btn').addEventListener('click', () => this.testTelegram())
     document.getElementById('scheduler-settings-btn').addEventListener('click', () => this.showSchedulerSettings())
+    
+    // Setup portfolio management handlers
+    this.setupPortfolioEvents()
 
     // Load dashboard data and check scheduler status
     await this.loadDashboardData()
@@ -2079,6 +2103,161 @@ class EnhancedTraderApp {
         ` : ''}
       </div>
     `
+  }
+
+  // Portfolio Management Methods
+
+  async loadUserPortfolios() {
+    try {
+      const response = await axios.get('/api/portfolios')
+      if (response.data.success) {
+        this.portfolios = response.data.data || []
+        if (this.portfolios.length > 0 && !this.selectedPortfolioId) {
+          this.selectedPortfolioId = this.portfolios[0].id
+        }
+        console.log('📊 Loaded portfolios:', this.portfolios.length)
+      } else {
+        console.error('Failed to load portfolios:', response.data.error)
+        this.portfolios = []
+      }
+    } catch (error) {
+      console.error('Error loading portfolios:', error)
+      this.portfolios = []
+    }
+  }
+
+  getCurrentPortfolioValue() {
+    if (this.portfolios.length === 0) return '0'
+    const selected = this.portfolios.find(p => p.id === this.selectedPortfolioId)
+    return selected ? new Intl.NumberFormat().format(selected.total_value) : '0'
+  }
+
+  async setupPortfolioEvents() {
+    // Portfolio selector change
+    const selector = document.getElementById('portfolio-selector')
+    if (selector) {
+      selector.addEventListener('change', (e) => {
+        this.selectedPortfolioId = e.target.value
+        this.refreshCurrentPage()
+      })
+    }
+
+    // Create portfolio button
+    const createBtn = document.getElementById('create-portfolio-btn')
+    if (createBtn) {
+      createBtn.addEventListener('click', () => this.showCreatePortfolioModal())
+    }
+  }
+
+  showCreatePortfolioModal() {
+    const modalHtml = `
+      <div id="create-portfolio-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+          <div class="mt-3">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-medium text-gray-900">Create New Portfolio</h3>
+              <button id="close-create-modal" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+              </button>
+            </div>
+            
+            <form id="create-portfolio-form" class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Portfolio Name</label>
+                <input type="text" id="portfolio-name" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="My Trading Portfolio">
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Base Currency</label>
+                <select id="portfolio-currency" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="USD">USD - US Dollar</option>
+                  <option value="EUR">EUR - Euro</option>
+                  <option value="GBP">GBP - British Pound</option>
+                  <option value="ILS">ILS - Israeli Shekel</option>
+                  <option value="JPY">JPY - Japanese Yen</option>
+                </select>
+              </div>
+              
+              <div class="bg-blue-50 p-3 rounded-md">
+                <p class="text-sm text-blue-700">
+                  <i class="fas fa-info-circle mr-2"></i>
+                  New portfolios start with $100,000 in virtual capital for AI recommendations.
+                </p>
+              </div>
+              
+              <div class="flex gap-3 pt-4">
+                <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                  Create Portfolio
+                </button>
+                <button type="button" id="cancel-create" class="px-4 py-2 text-gray-600 hover:text-gray-800">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    `
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml)
+    const modal = document.getElementById('create-portfolio-modal')
+    
+    // Event listeners
+    document.getElementById('close-create-modal').addEventListener('click', () => {
+      document.body.removeChild(modal)
+    })
+    
+    document.getElementById('cancel-create').addEventListener('click', () => {
+      document.body.removeChild(modal)
+    })
+    
+    document.getElementById('create-portfolio-form').addEventListener('submit', async (e) => {
+      e.preventDefault()
+      await this.createNewPortfolio()
+      document.body.removeChild(modal)
+    })
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        document.body.removeChild(modal)
+      }
+    })
+  }
+
+  async createNewPortfolio() {
+    try {
+      const name = document.getElementById('portfolio-name').value.trim()
+      const currency = document.getElementById('portfolio-currency').value
+      
+      if (!name) {
+        this.showNotification('❌ Please enter a portfolio name', 'error')
+        return
+      }
+      
+      const response = await axios.post('/api/portfolios', {
+        name,
+        base_currency: currency
+      })
+      
+      if (response.data.success) {
+        this.showNotification(`✅ Portfolio "${name}" created successfully!`, 'success')
+        
+        // Reload portfolios and select the new one
+        await this.loadUserPortfolios()
+        this.selectedPortfolioId = response.data.data.id
+        
+        // Refresh the dashboard to show new portfolio
+        await this.showDashboard()
+      } else {
+        this.showNotification(`❌ Failed to create portfolio: ${response.data.error}`, 'error')
+      }
+    } catch (error) {
+      console.error('Portfolio creation error:', error)
+      this.showNotification('❌ Failed to create portfolio', 'error')
+    }
   }
 }
 
