@@ -2853,15 +2853,40 @@ class EnhancedTraderApp {
         return
       }
 
-      // Get service worker registration with timeout
+      // Get service worker registration with longer timeout and better handling
       console.log('🔧 Getting service worker registration...')
-      const registration = await Promise.race([
-        navigator.serviceWorker.ready,
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Service Worker timeout')), 10000)
-        )
-      ])
-      console.log('🔧 Service worker ready:', registration)
+      let registration
+      
+      try {
+        registration = await Promise.race([
+          navigator.serviceWorker.ready,
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Service Worker timeout')), 30000) // 30 seconds
+          )
+        ])
+        console.log('🔧 Service worker ready:', registration)
+      } catch (error) {
+        if (error.message === 'Service Worker timeout') {
+          console.log('⚠️ Service Worker taking too long, trying alternative approach...')
+          // Try to register our own service worker if needed
+          try {
+            registration = await navigator.serviceWorker.register('/static/sw.js')
+            await new Promise(resolve => {
+              if (registration.installing) {
+                registration.installing.addEventListener('statechange', function() {
+                  if (this.state === 'activated') resolve()
+                })
+              } else {
+                resolve()
+              }
+            })
+          } catch (swError) {
+            throw new Error('Service Worker registration failed: ' + swError.message)
+          }
+        } else {
+          throw error
+        }
+      }
       
       // Subscribe to push notifications
       console.log('🔧 Subscribing to push notifications...')
@@ -2898,6 +2923,9 @@ class EnhancedTraderApp {
         this.updatePushButtonStatus(false, 'Not Supported')
       } else if (error.name === 'NotAllowedError') {
         this.showNotification('❌ Push notifications were blocked. Please enable in browser settings.', 'error')
+        this.updatePushButtonStatus(false)
+      } else if (error.message.includes('Service Worker')) {
+        this.showNotification('❌ Service Worker setup failed. Push notifications will work after page refresh.', 'error')
         this.updatePushButtonStatus(false)
       } else {
         this.showNotification('❌ Failed to setup push notifications: ' + error.message, 'error')

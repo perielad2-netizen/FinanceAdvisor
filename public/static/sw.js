@@ -10,11 +10,16 @@ const urlsToCache = [
 // Install event - cache resources
 self.addEventListener('install', (event) => {
   console.log('🔧 Service Worker: Installing...')
-  event.waitUntil(
+  
+  // Skip caching for faster installation, just install immediately
+  console.log('✅ Service Worker: Fast installation (skipping cache for now)')
+  self.skipWaiting() // Activate immediately
+  
+  // Optional: Cache files in background without blocking installation
+  if (urlsToCache.length > 0) {
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('🔧 Service Worker: Caching app shell')
-        // Cache files individually with error handling
+        console.log('🔧 Service Worker: Background caching...')
         return Promise.allSettled(
           urlsToCache.map(url => 
             cache.add(url).catch(err => {
@@ -25,15 +30,12 @@ self.addEventListener('install', (event) => {
         )
       })
       .then(() => {
-        console.log('✅ Service Worker: Installation complete')
-        return self.skipWaiting()
+        console.log('✅ Service Worker: Background caching complete')
       })
       .catch((error) => {
-        console.error('❌ Service Worker: Installation failed', error)
-        // Don't fail the installation, just skip caching
-        return self.skipWaiting()
+        console.warn('⚠️ Service Worker: Background caching failed', error)
       })
-  )
+  }
 })
 
 // Activate event - clean up old caches
