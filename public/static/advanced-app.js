@@ -2842,31 +2842,46 @@ class EnhancedTraderApp {
       }
 
       // Request permission
+      console.log('🔧 Requesting notification permission...')
       const permission = await Notification.requestPermission()
+      console.log('🔧 Permission result:', permission)
       
       if (permission !== 'granted') {
+        console.log('❌ Permission denied')
         this.showNotification('❌ Push notification permission was denied. Please enable in your browser settings.', 'error')
         this.updatePushButtonStatus(false)
         return
       }
 
       // Get service worker registration
+      console.log('🔧 Getting service worker registration...')
       const registration = await navigator.serviceWorker.ready
+      console.log('🔧 Service worker ready:', registration)
       
       // Subscribe to push notifications
+      console.log('🔧 Subscribing to push notifications...')
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: this.urlBase64ToUint8Array('BP8tCQJg4TjBL_9l0w-j3YaEtQN3-e0oLbPgLb-dokhJH8jkgv7dJQz1QNIsJR8RPXpHQAM2VtUJBYjgkc6W1os') // Demo VAPID key
       })
+      console.log('🔧 Subscription created:', subscription)
 
       // Send subscription to server
-      const response = await axios.post('/api/notifications/push/subscribe', subscription)
+      console.log('🔧 Sending subscription to server...')
+      const response = await axios.post('/api/notifications/push/subscribe', subscription, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      console.log('🔧 Server response:', response.data)
       
-      if (response.data.success) {
+      if (response.data && response.data.success) {
         this.showNotification('✅ Push notifications enabled successfully! You\'ll now receive instant notifications.', 'success')
         this.updatePushButtonStatus(true)
       } else {
-        this.showNotification('❌ Failed to register push subscription on server', 'error')
+        console.error('❌ Server response error:', response.data)
+        this.showNotification('❌ Failed to register push subscription: ' + (response.data?.error || 'Unknown error'), 'error')
         this.updatePushButtonStatus(false)
       }
 
@@ -3121,6 +3136,10 @@ const customStyles = `
 
 // Add custom styles to head
 document.head.insertAdjacentHTML('beforeend', customStyles)
+
+// Configure axios defaults for authentication
+axios.defaults.withCredentials = true
+axios.defaults.headers.common['Content-Type'] = 'application/json'
 
 // Initialize the enhanced app
 const app = new EnhancedTraderApp()
