@@ -4,8 +4,6 @@
 const CACHE_NAME = 'trader-advisor-v1'
 const urlsToCache = [
   '/',
-  '/static/advanced-app.js',
-  '/static/styles.css',
   '/static/manifest.json'
 ]
 
@@ -16,7 +14,24 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('🔧 Service Worker: Caching app shell')
-        return cache.addAll(urlsToCache)
+        // Cache files individually with error handling
+        return Promise.allSettled(
+          urlsToCache.map(url => 
+            cache.add(url).catch(err => {
+              console.warn(`⚠️ Failed to cache ${url}:`, err)
+              return null
+            })
+          )
+        )
+      })
+      .then(() => {
+        console.log('✅ Service Worker: Installation complete')
+        return self.skipWaiting()
+      })
+      .catch((error) => {
+        console.error('❌ Service Worker: Installation failed', error)
+        // Don't fail the installation, just skip caching
+        return self.skipWaiting()
       })
   )
 })

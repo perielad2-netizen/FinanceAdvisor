@@ -2853,9 +2853,14 @@ class EnhancedTraderApp {
         return
       }
 
-      // Get service worker registration
+      // Get service worker registration with timeout
       console.log('🔧 Getting service worker registration...')
-      const registration = await navigator.serviceWorker.ready
+      const registration = await Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Service Worker timeout')), 10000)
+        )
+      ])
       console.log('🔧 Service worker ready:', registration)
       
       // Subscribe to push notifications
