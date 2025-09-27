@@ -278,10 +278,35 @@ JWT_SECRET=trader-advisor-super-secret...
 ## 🚀 **Getting Started**
 
 1. **Experience the Demo**: Try the advanced AI analysis features
-2. **Explore the API**: Test real-time data and AI recommendations
-3. **Review the Code**: Examine the sophisticated technical architecture  
-4. **Deploy Your Instance**: Use the production deployment guide
-5. **Contribute**: Join our mission to build the ultimate AI trading advisor
+2. **Configure Telegram**: Follow the setup guide below for personal notifications
+3. **Explore the API**: Test real-time data and AI recommendations
+4. **Review the Code**: Examine the sophisticated technical architecture  
+5. **Deploy Your Instance**: Use the production deployment guide
+6. **Contribute**: Join our mission to build the ultimate AI trading advisor
+
+## 📲 **Telegram Setup Guide**
+
+### **Step-by-Step Configuration**
+1. **Create Your Bot**: 
+   - Message [@BotFather](https://t.me/botfather) on Telegram
+   - Send `/newbot` and follow instructions
+   - Save your Bot Token (e.g., `1234567890:ABC-DEF1234ghIkl-zyx57W2v1u123ew11`)
+
+2. **Get Your Chat ID**:
+   - Message [@userinfobot](https://t.me/userinfobot) on Telegram
+   - Save your Chat ID (e.g., `123456789`)
+
+3. **Configure in App**:
+   - Open the application and login
+   - Click the Settings ⚙️ button next to "Generate Now"
+   - Enable "Telegram notifications"
+   - Enter your Bot Token and Chat ID
+   - Click "Test Connection" to verify setup
+   - Save your settings
+
+4. **Start Receiving Recommendations**:
+   - Click "Generate Now" for instant recommendations
+   - Or enable the automatic scheduler for regular updates
 
 ## 📱 **NEW: Mobile-First UI with Telegram Automation**
 
@@ -304,18 +329,24 @@ JWT_SECRET=trader-advisor-super-secret...
 - **Secure Storage**: All user contact data saved with full international format
 - **Demo Account**: Try without registration - click "Try Demo Account"
 
-### **🤖 Telegram Automation Features**
-- **Manual Generation**: "Generate Now" button for instant recommendations
+### **🤖 Advanced Telegram Configuration**
+- **Personal Bot Setup**: Complete interface for configuring individual Telegram bots
+- **Smart Validation**: Prevents recommendation generation without proper Telegram setup
+- **Toggle Interface**: Show/hide Telegram configuration fields as needed
+- **Settings Persistence**: Load and save existing Telegram preferences automatically
+- **Manual Generation**: "Generate Now" button with Telegram delivery validation
 - **Automated Scheduler**: Start/Stop automatic recommendations every 2 hours
-- **Test Bot Connection**: Verify Telegram bot connectivity
+- **Test Connection**: Real-time verification of Telegram bot connectivity
 - **Settings Panel**: Configure intervals (1-6 hours) and risk allocation
 - **Real-time Status**: View scheduler status, last run, and next run times
 
-### **💬 Telegram Notifications**
-- **Bot**: @VirtualTraderAdvisorBot (already configured)
+### **💬 Personal Telegram Integration**
+- **Personal Bot Setup**: Each user configures their own Telegram bot (privacy-first)
+- **Easy Configuration**: Built-in interface for Bot Token and Chat ID setup
+- **Setup Guide**: Direct links to @BotFather and @userinfobot for easy configuration
+- **Test Connection**: One-click verification of Telegram bot connectivity
 - **Rich Messages**: Trading signals with emojis, price levels, and risk indicators
-- **Batch Summaries**: Summary after each recommendation session
-- **Market Alerts**: System notifications for scheduler events
+- **Privacy Protected**: No shared notifications - each user receives only their recommendations
 
 ### **⚙️ Scheduler Settings**
 - **Default Interval**: 2 hours during market hours (9:30 AM - 4:00 PM EST)
@@ -326,9 +357,11 @@ JWT_SECRET=trader-advisor-super-secret...
 ### **📊 Current Status**
 - ✅ **Authentication**: Registration and login fully working
 - ✅ **Mobile UI**: Responsive design for all screen sizes  
-- ✅ **Telegram Bot**: Connected and sending test notifications
-- ✅ **Database**: User data and preferences stored securely
-- ✅ **Scheduler**: Manual and automated recommendation generation
-- ✅ **API Integration**: All endpoints functional
+- ✅ **Personal Telegram Integration**: Complete configuration interface with validation
+- ✅ **Database**: User preferences and Telegram settings stored securely
+- ✅ **Scheduler**: Manual and automated recommendation generation with Telegram delivery
+- ✅ **Privacy Protection**: Each user has personal Telegram bot configuration
+- ✅ **Configuration Interface**: Interactive setup with validation and testing
+- ✅ **API Integration**: All endpoints functional with enhanced error handling
 
 **Ready to revolutionize your trading with AI? Let's build the future of intelligent investing together! 🚀📈🤖**
