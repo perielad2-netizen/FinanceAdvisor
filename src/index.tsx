@@ -13,6 +13,7 @@ import { newsRoutes } from './routes/news'
 import { recommendationRoutes } from './routes/recommendations'
 import { marketRoutes } from './routes/market'
 import advancedApiRoutes from './routes/advanced-api'
+import schedulerApiRoutes from './routes/scheduler-api'
 import { initializeDatabase } from './database'
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>()
@@ -45,6 +46,7 @@ app.route('/api/news', newsRoutes)
 app.route('/api/recommendations', recommendationRoutes)
 app.route('/api/market', marketRoutes)
 app.route('/api/advanced', advancedApiRoutes)
+app.route('/api/scheduler', schedulerApiRoutes)
 
 // Main application route
 app.get('/', (c) => {

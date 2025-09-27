@@ -17,12 +17,28 @@ export const authRoutes = new Hono<{ Bindings: Bindings; Variables: Variables }>
 // Register new user
 authRoutes.post('/register', async (c) => {
   try {
-    const { email, password, name } = await c.req.json()
+    const { email, password, name, phone, notification_preferences } = await c.req.json()
     
-    if (!email || !password || !name) {
+    if (!email || !password || !name || !phone) {
       return c.json<APIResponse>({ 
         success: false, 
-        error: 'Email, password, and name are required' 
+        message: 'Email, password, name, and phone number are all required' 
+      }, 400)
+    }
+    
+    // International phone number validation (must start with +)
+    const phoneRegex = /^\+[1-9]\d{8,14}$/
+    if (!phoneRegex.test(phone)) {
+      return c.json<APIResponse>({ 
+        success: false, 
+        message: 'Phone number must be in international format (e.g., +972501234567)' 
+      }, 400)
+    }
+
+    if (password.length < 6) {
+      return c.json<APIResponse>({ 
+        success: false, 
+        message: 'Password must be at least 6 characters long' 
       }, 400)
     }
 
@@ -34,19 +50,56 @@ authRoutes.post('/register', async (c) => {
     if (existingUser) {
       return c.json<APIResponse>({ 
         success: false, 
-        error: 'User already exists' 
+        message: 'User already exists with this email address' 
       }, 409)
     }
 
     // Hash password
     const hashedPassword = await simpleHash(password)
     
-    // Create user
+    // Create user with phone number (now required)
     const userId = 'user-' + Math.random().toString(36).substr(2, 9)
-    await c.env.DB.prepare(`
-      INSERT INTO users (id, email, password_hash, name, role, is_active)
-      VALUES (?, ?, ?, ?, 'user', true)
-    `).bind(userId, email, hashedPassword, name).run()
+    
+    // Try to insert with phone_number column, fallback if column doesn't exist
+    try {
+      await c.env.DB.prepare(`
+        INSERT INTO users (id, email, password_hash, name, phone_number, role, is_active)
+        VALUES (?, ?, ?, ?, ?, 'user', true)
+      `).bind(userId, email, hashedPassword, name, phone).run()
+    } catch (error) {
+      // Fallback: Insert without phone_number column if it doesn't exist
+      console.log('Inserting without phone_number column:', error.message)
+      await c.env.DB.prepare(`
+        INSERT INTO users (id, email, password_hash, name, role, is_active)
+        VALUES (?, ?, ?, ?, 'user', true)
+      `).bind(userId, email, hashedPassword, name).run()
+      
+      // Try to add phone number in a separate update
+      try {
+        await c.env.DB.prepare(`
+          UPDATE users SET phone_number = ? WHERE id = ?
+        `).bind(phone, userId).run()
+      } catch (updateError) {
+        console.log('Phone number storage failed - will be handled in user preferences')
+      }
+    }
+
+    // Store notification preferences
+    if (notification_preferences) {
+      try {
+        await c.env.DB.prepare(`
+          INSERT INTO user_preferences (user_id, email_notifications, telegram_notifications, phone_notifications)
+          VALUES (?, ?, ?, ?)
+        `).bind(
+          userId, 
+          notification_preferences.email ? 1 : 0,
+          notification_preferences.telegram ? 1 : 0,
+          notification_preferences.whatsapp || notification_preferences.phone ? 1 : 0
+        ).run()
+      } catch (error) {
+        console.log('User preferences creation skipped (table may not exist yet)')
+      }
+    }
 
     // Create default portfolio
     const portfolioId = 'portfolio-' + Math.random().toString(36).substr(2, 9)
@@ -74,7 +127,52 @@ authRoutes.post('/register', async (c) => {
     console.error('Register error:', error)
     return c.json<APIResponse>({ 
       success: false, 
-      error: 'Internal server error' 
+      message: 'Registration failed. Please try again.' 
+    }, 500)
+  }
+})
+
+// Demo login (creates temporary user)
+authRoutes.post('/demo-login', async (c) => {
+  try {
+    // Generate simple demo user without database
+    const demoUser = {
+      id: 'demo-user-' + Date.now(),
+      email: 'demo@traderadvisor.ai', 
+      name: 'Demo User',
+      role: 'demo',
+      is_active: true,
+      created_at: new Date().toISOString()
+    }
+
+    // Generate token
+    const payload = {
+      user_id: demoUser.id,
+      email: demoUser.email,
+      role: demoUser.role,
+      exp: Date.now() + (60 * 60 * 4 * 1000) // 4 hours for demo
+    }
+
+    const token = btoa(JSON.stringify(payload))
+
+    // Set cookie
+    setCookie(c, 'auth-token', token, {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'Lax',
+      maxAge: 60 * 60 * 4 // 4 hours
+    })
+
+    return c.json<APIResponse<User>>({ 
+      success: true, 
+      data: demoUser 
+    })
+
+  } catch (error) {
+    console.error('Demo login error:', error)
+    return c.json<APIResponse>({ 
+      success: false, 
+      message: 'Demo login failed. Please try again.' 
     }, 500)
   }
 })

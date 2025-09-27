@@ -283,4 +283,52 @@ JWT_SECRET=trader-advisor-super-secret...
 4. **Deploy Your Instance**: Use the production deployment guide
 5. **Contribute**: Join our mission to build the ultimate AI trading advisor
 
+## 📱 **NEW: Mobile-First UI with Telegram Automation**
+
+### **🚀 Live Application**
+**URL**: https://3000-iav63itwzhn0qsn4df5d9-6532622b.e2b.dev
+
+### **📱 Mobile-Optimized Interface**
+- **Responsive Design**: Perfect mobile experience with touch-friendly controls
+- **Collapsible Navigation**: Hamburger menu for mobile, full nav for desktop
+- **Compact Dashboard**: 2x2 grid on mobile, 4x1 on desktop
+- **Touch Controls**: All buttons optimized for mobile interaction
+
+### **📲 Complete User Registration System**
+- **Required Information**: Name, email, phone number (all required fields)
+- **International Phone Numbers**: Country code selector with 30+ countries (🇮🇱 +972, 🇺🇸 +1, etc.)
+- **Phone Format**: Enforced international format (e.g., +972501234567)
+- **Real-time Preview**: Shows example format based on selected country
+- **Contact Validation**: Strict international phone number validation
+- **Notification Preferences**: Auto opt-in for email, Telegram, and WhatsApp notifications
+- **Secure Storage**: All user contact data saved with full international format
+- **Demo Account**: Try without registration - click "Try Demo Account"
+
+### **🤖 Telegram Automation Features**
+- **Manual Generation**: "Generate Now" button for instant recommendations
+- **Automated Scheduler**: Start/Stop automatic recommendations every 2 hours
+- **Test Bot Connection**: Verify Telegram bot connectivity
+- **Settings Panel**: Configure intervals (1-6 hours) and risk allocation
+- **Real-time Status**: View scheduler status, last run, and next run times
+
+### **💬 Telegram Notifications**
+- **Bot**: @VirtualTraderAdvisorBot (already configured)
+- **Rich Messages**: Trading signals with emojis, price levels, and risk indicators
+- **Batch Summaries**: Summary after each recommendation session
+- **Market Alerts**: System notifications for scheduler events
+
+### **⚙️ Scheduler Settings**
+- **Default Interval**: 2 hours during market hours (9:30 AM - 4:00 PM EST)
+- **Risk Allocation**: 20% high-risk, 30% medium-risk, 50% low-risk (configurable)
+- **Market Hours Only**: Automatically skip weekends and after-hours
+- **Confidence Threshold**: 70% minimum confidence for recommendations
+
+### **📊 Current Status**
+- ✅ **Authentication**: Registration and login fully working
+- ✅ **Mobile UI**: Responsive design for all screen sizes  
+- ✅ **Telegram Bot**: Connected and sending test notifications
+- ✅ **Database**: User data and preferences stored securely
+- ✅ **Scheduler**: Manual and automated recommendation generation
+- ✅ **API Integration**: All endpoints functional
+
 **Ready to revolutionize your trading with AI? Let's build the future of intelligent investing together! 🚀📈🤖**

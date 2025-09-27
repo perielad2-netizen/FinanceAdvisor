@@ -12,9 +12,26 @@ export async function initializeDatabase(db: D1Database) {
         email TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
         name TEXT NOT NULL,
+        phone_number TEXT,
         role TEXT DEFAULT 'user',
         is_active BOOLEAN DEFAULT TRUE,
         last_login_at DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).run()
+
+    // Create user preferences table
+    await db.prepare(`
+      CREATE TABLE IF NOT EXISTS user_preferences (
+        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+        user_id TEXT NOT NULL UNIQUE,
+        email_notifications BOOLEAN DEFAULT TRUE,
+        telegram_notifications BOOLEAN DEFAULT TRUE,
+        whatsapp_notifications BOOLEAN DEFAULT TRUE,
+        phone_notifications BOOLEAN DEFAULT FALSE,
+        recommendation_frequency INTEGER DEFAULT 120,
+        risk_tolerance TEXT DEFAULT 'moderate',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
@@ -29,6 +46,22 @@ export async function initializeDatabase(db: D1Database) {
         base_currency TEXT DEFAULT 'USD',
         advisor_mode BOOLEAN DEFAULT TRUE,
         auto_mode BOOLEAN DEFAULT FALSE,
+        total_value REAL DEFAULT 0.0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).run()
+
+    // Create positions table
+    await db.prepare(`
+      CREATE TABLE IF NOT EXISTS positions (
+        id TEXT PRIMARY KEY,
+        portfolio_id TEXT NOT NULL,
+        symbol TEXT NOT NULL,
+        shares REAL NOT NULL,
+        purchase_price REAL NOT NULL,
+        current_price REAL,
+        purchase_date DATETIME DEFAULT CURRENT_TIMESTAMP,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
