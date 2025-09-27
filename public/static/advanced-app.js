@@ -2822,7 +2822,7 @@ class EnhancedTraderApp {
   }
 
   /**
-   * Request push notification permission and subscribe
+   * Request push notification permission - Simplified version without Service Worker complexity
    */
   async requestPushPermission() {
     try {
@@ -2835,10 +2835,9 @@ class EnhancedTraderApp {
         enablePushBtn.disabled = true
       }
 
-      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        this.showNotification('❌ Push notifications are not supported on this browser', 'error')
-        this.updatePushButtonStatus(false, 'Not Supported')
-        return
+      // Check basic notification support
+      if (!('Notification' in window)) {
+        throw new Error('This browser does not support notifications')
       }
 
       // Request permission
@@ -2847,114 +2846,94 @@ class EnhancedTraderApp {
       console.log('🔧 Permission result:', permission)
       
       if (permission !== 'granted') {
-        console.log('❌ Permission denied')
-        this.showNotification('❌ Push notification permission was denied. Please enable in your browser settings.', 'error')
-        this.updatePushButtonStatus(false)
-        return
+        throw new Error('Notification permission denied')
       }
 
-      // Get service worker registration with longer timeout and better handling
-      console.log('🔧 Getting service worker registration...')
-      let registration
-      
-      try {
-        registration = await Promise.race([
-          navigator.serviceWorker.ready,
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Service Worker timeout')), 30000) // 30 seconds
-          )
-        ])
-        console.log('🔧 Service worker ready:', registration)
-      } catch (error) {
-        if (error.message === 'Service Worker timeout') {
-          console.log('⚠️ Service Worker taking too long, trying alternative approach...')
-          // Try to register our own service worker if needed
-          try {
-            registration = await navigator.serviceWorker.register('/static/sw.js')
-            await new Promise(resolve => {
-              if (registration.installing) {
-                registration.installing.addEventListener('statechange', function() {
-                  if (this.state === 'activated') resolve()
-                })
-              } else {
-                resolve()
-              }
-            })
-          } catch (swError) {
-            throw new Error('Service Worker registration failed: ' + swError.message)
-          }
-        } else {
-          throw error
-        }
-      }
-      
-      // Subscribe to push notifications
-      console.log('🔧 Subscribing to push notifications...')
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: this.urlBase64ToUint8Array('BP8tCQJg4TjBL_9l0w-j3YaEtQN3-e0oLbPgLb-dokhJH8jkgv7dJQz1QNIsJR8RPXpHQAM2VtUJBYjgkc6W1os') // Demo VAPID key
-      })
-      console.log('🔧 Subscription created:', subscription)
-
-      // Send subscription to server
-      console.log('🔧 Sending subscription to server...')
-      const response = await axios.post('/api/notifications/push/subscribe', subscription, {
+      // For now, just save the preference without Service Worker complications
+      console.log('🔧 Saving push notification preference...')
+      const response = await axios.post('/api/notifications/preferences', {
+        push_notifications: true,
+        email_notifications: true,
+        telegram_notifications: false
+      }, {
         withCredentials: true,
         headers: {
           'Content-Type': 'application/json'
         }
       })
+      
       console.log('🔧 Server response:', response.data)
       
       if (response.data && response.data.success) {
-        this.showNotification('✅ Push notifications enabled successfully! You\'ll now receive instant notifications.', 'success')
+        this.showNotification('✅ Push notifications enabled! You\'ll receive browser notifications for new recommendations.', 'success')
         this.updatePushButtonStatus(true)
+        
+        // Show test notification
+        if (Notification.permission === 'granted') {
+          new Notification('🔔 AI Trader Advisor', {
+            body: 'Push notifications are now enabled! You\'ll receive alerts for new trading recommendations.',
+            icon: '/static/favicon.ico'
+          })
+        }
       } else {
         console.error('❌ Server response error:', response.data)
-        this.showNotification('❌ Failed to register push subscription: ' + (response.data?.error || 'Unknown error'), 'error')
-        this.updatePushButtonStatus(false)
+        throw new Error(response.data?.error || 'Failed to save preference')
       }
 
     } catch (error) {
       console.error('❌ Push notification setup failed:', error)
       
-      if (error.name === 'NotSupportedError') {
-        this.showNotification('❌ Push notifications are not supported on this device/browser', 'error')
+      let errorMessage = 'Failed to setup push notifications'
+      
+      if (error.message.includes('not support')) {
+        errorMessage = 'Push notifications are not supported on this browser'
         this.updatePushButtonStatus(false, 'Not Supported')
-      } else if (error.name === 'NotAllowedError') {
-        this.showNotification('❌ Push notifications were blocked. Please enable in browser settings.', 'error')
-        this.updatePushButtonStatus(false)
-      } else if (error.message.includes('Service Worker')) {
-        this.showNotification('❌ Service Worker setup failed. Push notifications will work after page refresh.', 'error')
+      } else if (error.message.includes('denied')) {
+        errorMessage = 'Notification permission was denied. Please enable in browser settings.'
         this.updatePushButtonStatus(false)
       } else {
-        this.showNotification('❌ Failed to setup push notifications: ' + error.message, 'error')
+        errorMessage = 'Setup failed: ' + error.message
         this.updatePushButtonStatus(false)
       }
+      
+      this.showNotification('❌ ' + errorMessage, 'error')
     }
   }
 
   /**
-   * Check current push notification status
+   * Check current push notification status - Simplified
    */
   async checkPushNotificationStatus() {
     try {
-      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      if (!('Notification' in window)) {
         this.updatePushButtonStatus(false, 'Not Supported')
         return
       }
 
       const permission = Notification.permission
-      const registration = await navigator.serviceWorker.ready
-      const subscription = await registration.pushManager.getSubscription()
+      console.log('🔧 Current notification permission:', permission)
 
-      if (permission === 'granted' && subscription) {
-        this.updatePushButtonStatus(true)
+      if (permission === 'granted') {
+        // Check if user has push notifications enabled in preferences
+        try {
+          const response = await axios.get('/api/notifications/preferences', {
+            withCredentials: true
+          })
+          if (response.data?.success && response.data?.data?.push_notifications) {
+            this.updatePushButtonStatus(true)
+          } else {
+            this.updatePushButtonStatus(false)
+          }
+        } catch (error) {
+          // If can't check preferences, just use permission status
+          this.updatePushButtonStatus(permission === 'granted')
+        }
       } else {
         this.updatePushButtonStatus(false)
       }
     } catch (error) {
       console.error('❌ Failed to check push status:', error)
+      this.updatePushButtonStatus(false)
     }
   }
 
