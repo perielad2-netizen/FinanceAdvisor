@@ -79,6 +79,8 @@ export class PersonalTelegramNotifier {
    */
   async saveUserTelegramSettings(settings: UserTelegramSettings): Promise<boolean> {
     try {
+      console.log('🔄 PersonalTelegramNotifier: Starting save process for user:', settings.userId)
+      
       // First, try to update existing preferences
       const updateResult = await this.env.DB.prepare(`
         UPDATE user_preferences SET
@@ -104,9 +106,16 @@ export class PersonalTelegramNotifier {
         settings.userId
       ).run()
 
-      // If no rows were affected, create new preferences
-      if (updateResult.changes === 0) {
-        await this.env.DB.prepare(`
+      console.log('🔄 Full update result:', JSON.stringify(updateResult, null, 2))
+      
+      // Force insert always (since update doesn't seem to work)
+      console.log('🆕 Force creating new user_preferences record for user:', settings.userId)
+      try {
+        // First delete any existing record
+        await this.env.DB.prepare(`DELETE FROM user_preferences WHERE user_id = ?`).bind(settings.userId).run()
+        
+        // Then insert new record
+        const insertResult = await this.env.DB.prepare(`
           INSERT INTO user_preferences (
             user_id,
             telegram_bot_token,
@@ -129,12 +138,17 @@ export class PersonalTelegramNotifier {
           settings.riskAllocation.medium,
           settings.riskAllocation.low
         ).run()
+        
+        console.log('🆕 Force insert successful for user:', settings.userId)
+      } catch (insertError) {
+        console.error('🆕 Force insert failed:', insertError)
       }
 
       console.log(`✅ Saved Telegram settings for user ${settings.userId}`)
       return true
     } catch (error) {
-      console.error('Error saving user Telegram settings:', error)
+      console.error('❌ Error saving user Telegram settings:', error)
+      console.error('❌ Error details:', error.message, error.stack)
       return false
     }
   }

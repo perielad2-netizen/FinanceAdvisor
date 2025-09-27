@@ -98,4 +98,56 @@ app.get('/api/health', async (c) => {
   })
 })
 
+// Debug endpoint to check database tables
+app.get('/api/debug/tables', async (c) => {
+  if (!c.env.DB) {
+    return c.json({ error: 'Database not available' })
+  }
+  
+  try {
+    const tables = await c.env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table'").all()
+    return c.json({ 
+      tables: tables.results || [],
+      count: tables.results?.length || 0
+    })
+  } catch (error) {
+    return c.json({ error: error.message })
+  }
+})
+
+// Debug endpoint to check positions table
+app.get('/api/debug/positions/:portfolioId', async (c) => {
+  if (!c.env.DB) {
+    return c.json({ error: 'Database not available' })
+  }
+  
+  try {
+    const portfolioId = c.req.param('portfolioId')
+    
+    // Try positions_snapshot first
+    let positions = await c.env.DB.prepare(`
+      SELECT ps.*, t.symbol, t.company_name
+      FROM positions_snapshot ps
+      LEFT JOIN tickers t ON ps.ticker_id = t.id
+      WHERE ps.portfolio_id = ?
+    `).bind(portfolioId).all()
+    
+    // If no results, try positions table
+    if (!positions.results || positions.results.length === 0) {
+      positions = await c.env.DB.prepare(`
+        SELECT * FROM positions WHERE portfolio_id = ?
+      `).bind(portfolioId).all()
+    }
+    
+    return c.json({ 
+      portfolio_id: portfolioId,
+      positions: positions.results || [],
+      count: positions.results?.length || 0,
+      table_used: positions.results?.length > 0 ? 'positions_snapshot' : 'positions'
+    })
+  } catch (error) {
+    return c.json({ error: error.message })
+  }
+})
+
 export default app

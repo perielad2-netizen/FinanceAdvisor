@@ -1,0 +1,16 @@
+{
+  "name": "Real-Time Trader Advisor",
+  "short_name": "TraderAdvisor", 
+  "description": "AI-powered trading recommendations and portfolio management",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/static/favicon.ico",
+      "sizes": "16x16 32x32",
+      "type": "image/x-icon"
+    }
+  ]
+}

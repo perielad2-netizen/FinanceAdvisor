@@ -50,6 +50,7 @@ personalTelegramRoutes.get('/settings', async (c) => {
 
 // Save user's personal Telegram settings
 personalTelegramRoutes.post('/settings', async (c) => {
+  console.log('🚀 POST /api/personal-telegram/settings called')
   try {
     // Get auth token from cookie
     const { getCookie } = await import('hono/cookie')
@@ -86,11 +87,15 @@ personalTelegramRoutes.post('/settings', async (c) => {
     }
 
     const telegramService = new PersonalTelegramNotifier(c.env)
+    console.log('💾 About to save telegram settings:', JSON.stringify(settings, null, 2))
     const success = await telegramService.saveUserTelegramSettings(settings)
+    console.log('💾 Save result:', success)
 
     if (success) {
+      console.log('✅ API: Settings saved successfully for user:', payload.user_id)
       return c.json<APIResponse>({ success: true, data: { message: 'Settings saved successfully' } })
     } else {
+      console.error('❌ API: Failed to save settings for user:', payload.user_id)
       return c.json<APIResponse>({ success: false, error: 'Failed to save settings' }, 500)
     }
   } catch (error) {

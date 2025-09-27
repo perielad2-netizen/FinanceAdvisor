@@ -3,10 +3,34 @@ import type { Bindings, Variables, APIResponse } from '../types'
 
 export const recommendationRoutes = new Hono<{ Bindings: Bindings; Variables: Variables }>()
 
+// Helper function to get auth payload
+async function getAuthPayload(c: any) {
+  const { getCookie } = await import('hono/cookie')
+  const token = getCookie(c, 'auth-token')
+  
+  if (!token) {
+    throw new Error('Not authenticated')
+  }
+
+  let payload
+  try {
+    payload = JSON.parse(atob(token))
+  } catch (error) {
+    throw new Error('Invalid token')
+  }
+
+  // Check if token is expired
+  if (payload.exp < Date.now()) {
+    throw new Error('Token expired')
+  }
+
+  return payload
+}
+
 // Get recommendations for user's portfolios
 recommendationRoutes.get('/', async (c) => {
   try {
-    const payload = c.get('jwtPayload') as any
+    const payload = await getAuthPayload(c)
     const status = c.req.query('status') || 'pending'
     const limit = parseInt(c.req.query('limit') || '20')
     
@@ -20,8 +44,11 @@ recommendationRoutes.get('/', async (c) => {
       LIMIT ?
     `).bind(payload.user_id, status, limit).all()
 
-    return c.json<APIResponse>({ success: true, data: recommendations.results })
+    return c.json<APIResponse>({ success: true, data: recommendations.results || [] })
   } catch (error) {
+    if (error.message.includes('authenticate') || error.message.includes('token')) {
+      return c.json<APIResponse>({ success: false, error: error.message }, 401)
+    }
     return c.json<APIResponse>({ success: false, error: 'Failed to fetch recommendations' }, 500)
   }
 })
@@ -92,7 +119,7 @@ recommendationRoutes.post('/generate', async (c) => {
 // Get recommendations for specific portfolio
 recommendationRoutes.get('/portfolio/:id', async (c) => {
   try {
-    const payload = c.get('jwtPayload') as any
+    const payload = await getAuthPayload(c)
     const portfolioId = c.req.param('id')
     const status = c.req.query('status') || 'pending'
     
@@ -113,8 +140,11 @@ recommendationRoutes.get('/portfolio/:id', async (c) => {
       ORDER BY r.created_at DESC
     `).bind(portfolioId, status).all()
 
-    return c.json<APIResponse>({ success: true, data: recommendations.results })
+    return c.json<APIResponse>({ success: true, data: recommendations.results || [] })
   } catch (error) {
+    if (error.message.includes('authenticate') || error.message.includes('token')) {
+      return c.json<APIResponse>({ success: false, error: error.message }, 401)
+    }
     return c.json<APIResponse>({ success: false, error: 'Failed to fetch recommendations' }, 500)
   }
 })
@@ -122,7 +152,7 @@ recommendationRoutes.get('/portfolio/:id', async (c) => {
 // Acknowledge recommendation (mark as seen)
 recommendationRoutes.post('/:id/acknowledge', async (c) => {
   try {
-    const payload = c.get('jwtPayload') as any
+    const payload = await getAuthPayload(c)
     const recId = c.req.param('id')
     
     // Verify recommendation belongs to user
@@ -151,7 +181,7 @@ recommendationRoutes.post('/:id/acknowledge', async (c) => {
 // Dismiss recommendation
 recommendationRoutes.post('/:id/dismiss', async (c) => {
   try {
-    const payload = c.get('jwtPayload') as any
+    const payload = await getAuthPayload(c)
     const recId = c.req.param('id')
     
     // Verify recommendation belongs to user
@@ -180,7 +210,7 @@ recommendationRoutes.post('/:id/dismiss', async (c) => {
 // Generate new recommendations for portfolio
 recommendationRoutes.post('/generate/:portfolioId', async (c) => {
   try {
-    const payload = c.get('jwtPayload') as any
+    const payload = await getAuthPayload(c)
     const portfolioId = c.req.param('portfolioId')
     
     // Verify portfolio ownership

@@ -24,15 +24,19 @@ class EnhancedTraderApp {
 
   async checkAuth() {
     try {
+      console.log('🔑 Checking authentication...')
       const response = await axios.get('/auth/me')
+      console.log('🔑 Auth response:', response.data)
       if (response.data.success) {
         this.currentUser = response.data.data
+        console.log('🔑 User authenticated, showing main app')
         await this.showMainApp()
       } else {
+        console.log('🔑 Auth failed, showing login')
         this.showLoginForm()
       }
     } catch (error) {
-      console.log('Not authenticated, showing login')
+      console.log('🔑 Auth error, showing login:', error.message)
       this.showLoginForm()
     }
   }
@@ -399,9 +403,15 @@ class EnhancedTraderApp {
                 </div>
                 
                 <!-- User -->
-                <div class="flex items-center">
-                  <i class="fas fa-user-circle text-lg text-gray-600 mr-1"></i>
-                  <span class="text-sm text-gray-700 hidden sm:inline">${this.currentUser?.name || 'User'}</span>
+                <div class="flex items-center space-x-2">
+                  <div class="flex items-center">
+                    <i class="fas fa-user-circle text-lg text-gray-600 mr-1"></i>
+                    <span class="text-sm text-gray-700 hidden sm:inline">${this.currentUser?.name || 'User'}</span>
+                  </div>
+                  <button id="logout-btn" class="text-red-600 hover:text-red-800 text-sm transition-colors" title="Logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span class="hidden sm:inline ml-1">Logout</span>
+                  </button>
                 </div>
                 
                 <!-- Mobile Menu Button -->
@@ -446,14 +456,25 @@ class EnhancedTraderApp {
     `
 
     this.setupNavigation()
-    this.showDashboard() // Default page
+    await this.showDashboard() // Wait for dashboard to load
     this.updateMarketRegime()
     
-    // Setup portfolio selector
-    document.getElementById('portfolio-selector').addEventListener('change', (e) => {
-      this.selectedPortfolioId = e.target.value
-      this.refreshCurrentPage()
-    })
+    // Setup portfolio selector (now it should exist)
+    const portfolioSelector = document.getElementById('portfolio-selector')
+    if (portfolioSelector) {
+      portfolioSelector.addEventListener('change', (e) => {
+        this.selectedPortfolioId = e.target.value
+        this.refreshCurrentPage()
+      })
+    } else {
+      console.warn('❌ portfolio-selector not found')
+    }
+    
+    // Setup logout button
+    const logoutBtn = document.getElementById('logout-btn')
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', () => this.handleLogout())
+    }
   }
 
   renderPortfolioOptions() {
@@ -529,8 +550,17 @@ class EnhancedTraderApp {
   async showDashboard() {
     const content = document.getElementById('main-content')
     
+    console.log('🎯 ShowDashboard called, main-content element:', content)
+    
+    if (!content) {
+      console.error('❌ main-content element not found!')
+      return
+    }
+    
     // Load user portfolios first
     await this.loadUserPortfolios()
+    
+    console.log('🎯 Setting innerHTML for dashboard...')
     
     content.innerHTML = `
       <div class="space-y-6">
@@ -579,12 +609,12 @@ class EnhancedTraderApp {
           
           <div class="bg-white rounded-lg shadow p-3 sm:p-6">
             <div class="flex items-center">
-              <div class="p-1 sm:p-2 bg-purple-100 rounded-lg">
-                <i class="fas fa-robot text-purple-600 text-sm"></i>
+              <div class="p-1 sm:p-2 bg-green-100 rounded-lg">
+                <i class="fas fa-chart-bar text-green-600 text-sm"></i>
               </div>
               <div class="ml-2 sm:ml-4 min-w-0 flex-1">
-                <p class="text-xs sm:text-sm font-medium text-gray-500 truncate">AI Score</p>
-                <p id="ai-confidence" class="text-lg sm:text-2xl font-semibold text-purple-600">${this.getAIConfidence()}</p>
+                <p class="text-xs sm:text-sm font-medium text-gray-500 truncate">Success Rate</p>
+                <p id="success-rate" class="text-lg sm:text-2xl font-semibold text-gray-400">N/A</p>
               </div>
             </div>
           </div>
@@ -718,19 +748,14 @@ class EnhancedTraderApp {
         </div>
       </div>
     `
-
-    // Setup button handlers
-    document.getElementById('ai-analysis-btn').addEventListener('click', () => this.generateAIAnalysis())
-    document.getElementById('technical-analysis-btn').addEventListener('click', () => this.generateTechnicalAnalysis())
-    document.getElementById('risk-analysis-btn').addEventListener('click', () => this.generateRiskAnalysis())
-    document.getElementById('rebalance-btn').addEventListener('click', () => this.generateRebalancing())
     
-    // Setup scheduler button handlers
-    document.getElementById('generate-now-btn').addEventListener('click', () => this.generateRecommendationsNow())
-    document.getElementById('start-scheduler-btn').addEventListener('click', () => this.startScheduler())
-    document.getElementById('stop-scheduler-btn').addEventListener('click', () => this.stopScheduler())
-    document.getElementById('test-telegram-btn').addEventListener('click', () => this.testTelegram())
-    document.getElementById('scheduler-settings-btn').addEventListener('click', () => this.showSchedulerSettings())
+    console.log('🎯 Dashboard HTML set successfully')
+
+    // Setup event listeners after DOM update
+    requestAnimationFrame(() => {
+      console.log('🎯 RequestAnimationFrame callback executing...')
+      this.setupDashboardEventListenersImmediate()
+    })
     
     // Setup portfolio management handlers
     this.setupPortfolioEvents()
@@ -1137,6 +1162,44 @@ class EnhancedTraderApp {
     return colors[action] || 'bg-gray-100 text-gray-800'
   }
 
+  // Safe event listener helper
+  safeAddEventListener(elementId, event, handler) {
+    const element = document.getElementById(elementId)
+    if (element) {
+      element.addEventListener(event, handler)
+      console.log(`✅ Added ${event} listener to ${elementId}`)
+    } else {
+      console.warn(`❌ Element with ID '${elementId}' not found - skipping event listener`)
+    }
+  }
+
+  // Setup event listeners immediately after HTML insertion
+  setupDashboardEventListenersImmediate() {
+    console.log('🔍 Looking for dashboard buttons...')
+    
+    // Debug: Check what's actually in the DOM
+    const allButtons = document.querySelectorAll('button')
+    console.log('🔍 Found buttons:', Array.from(allButtons).map(btn => btn.id || btn.className))
+    
+    // Debug: Check main-content element
+    const mainContent = document.getElementById('main-content')
+    console.log('🔍 main-content innerHTML length:', mainContent?.innerHTML.length)
+    console.log('🔍 main-content first 200 chars:', mainContent?.innerHTML.substring(0, 200))
+    
+    // Check if there are multiple elements with this ID
+    const allMainContent = document.querySelectorAll('#main-content')
+    console.log('🔍 Number of main-content elements:', allMainContent.length)
+    
+    // Dashboard buttons that should exist
+    this.safeAddEventListener('generate-now-btn', 'click', () => this.generateRecommendationsNow())
+    this.safeAddEventListener('start-scheduler-btn', 'click', () => this.startScheduler())
+    this.safeAddEventListener('stop-scheduler-btn', 'click', () => this.stopScheduler())
+    this.safeAddEventListener('test-telegram-btn', 'click', () => this.testTelegram())
+    this.safeAddEventListener('scheduler-settings-btn', 'click', () => this.showSchedulerSettings())
+    
+    console.log('✅ Dashboard event listeners setup complete')
+  }
+
   async loadDashboardData() {
     if (!this.selectedPortfolioId) return
 
@@ -1145,17 +1208,32 @@ class EnhancedTraderApp {
       const response = await axios.get(`/api/advanced/portfolio/${this.selectedPortfolioId}/overview`)
       
       if (response.data.success) {
-        const { metrics, risk_alerts } = response.data
+        const summary = response.data.summary || {}
         
-        // Update dashboard stats
-        document.getElementById('portfolio-value').textContent = `$${metrics.total_value.toFixed(0)}`
-        document.getElementById('daily-change').textContent = `${metrics.day_change >= 0 ? '+' : ''}${metrics.day_change_pct.toFixed(2)}%`
-        document.getElementById('ai-confidence').textContent = `${(Math.random() * 30 + 65).toFixed(0)}%` // Mock AI confidence
-        document.getElementById('risk-alerts').textContent = risk_alerts.length.toString()
+        // Update dashboard stats with safe access
+        const portfolioValueEl = document.getElementById('portfolio-value')
+        if (portfolioValueEl) {
+          portfolioValueEl.textContent = `$${(summary.total_value || 0).toFixed(0)}`
+        }
         
-        // Color code daily change
-        const changeElement = document.getElementById('daily-change')
-        changeElement.className = `text-2xl font-semibold ${metrics.day_change >= 0 ? 'text-green-600' : 'text-red-600'}`
+        const dailyChangeEl = document.getElementById('daily-change')
+        if (dailyChangeEl) {
+          const dailyChange = summary.daily_change_percent || 0
+          dailyChangeEl.textContent = `${dailyChange >= 0 ? '+' : ''}${dailyChange.toFixed(2)}%`
+          dailyChangeEl.className = `text-2xl font-semibold ${dailyChange >= 0 ? 'text-green-600' : 'text-red-600'}`
+        }
+        
+        const successRateEl = document.getElementById('success-rate')
+        if (successRateEl) {
+          // TODO: Calculate actual success rate from recommendations vs portfolio performance
+          successRateEl.textContent = 'N/A' // No data yet
+          successRateEl.className = 'text-lg sm:text-2xl font-semibold text-gray-400'
+        }
+        
+        const riskAlertsEl = document.getElementById('risk-alerts')
+        if (riskAlertsEl) {
+          riskAlertsEl.textContent = '0' // Mock risk alerts
+        }
       }
     } catch (error) {
       console.error('Error loading dashboard data:', error)
@@ -1167,12 +1245,14 @@ class EnhancedTraderApp {
 
   async loadRecentRecommendations() {
     try {
-      const response = await axios.get(`/api/recommendations?portfolio_id=${this.selectedPortfolioId}&limit=5`)
+      const response = await axios.get(`/api/recommendations/portfolio/${this.selectedPortfolioId}?limit=5`)
       
       if (response.data.success && response.data.data.length > 0) {
         this.displayRecentRecommendations(response.data.data)
       } else {
-        document.getElementById('recent-recommendations').innerHTML = `
+        const recentRecsEl = document.getElementById('recent-recommendations')
+        if (recentRecsEl) {
+          recentRecsEl.innerHTML = `
           <div class="text-center py-8">
             <i class="fas fa-info-circle text-gray-400 text-2xl mb-2"></i>
             <p class="text-gray-500">No recent recommendations</p>
@@ -1181,6 +1261,7 @@ class EnhancedTraderApp {
             </button>
           </div>
         `
+        }
       }
     } catch (error) {
       console.error('Error loading recommendations:', error)
@@ -1390,12 +1471,45 @@ class EnhancedTraderApp {
 
   showAuthError(message) {
     const errorDiv = document.getElementById('auth-error')
-    errorDiv.textContent = message
-    errorDiv.classList.remove('hidden')
-    
-    setTimeout(() => {
-      errorDiv.classList.add('hidden')
-    }, 5000)
+    if (errorDiv) {
+      errorDiv.textContent = message
+      errorDiv.classList.remove('hidden')
+      
+      setTimeout(() => {
+        errorDiv.classList.add('hidden')
+      }, 5000)
+    } else {
+      console.warn('auth-error element not found, showing in console:', message)
+    }
+  }
+  
+  async handleLogout() {
+    try {
+      // Clear user data
+      this.currentUser = null
+      this.selectedPortfolioId = null
+      this.portfolios = []
+      
+      // Call logout endpoint (if exists)
+      try {
+        await axios.post('/auth/logout')
+      } catch (error) {
+        // Logout endpoint might not exist, continue anyway
+        console.log('Logout endpoint not available, continuing with client-side logout')
+      }
+      
+      // Clear any stored tokens/cookies
+      document.cookie = 'auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+      
+      // Show login form
+      this.showLoginForm()
+      
+      console.log('✅ Logged out successfully')
+    } catch (error) {
+      console.error('Logout error:', error)
+      // Force logout anyway
+      this.showLoginForm()
+    }
   }
 
   // ==================== SCHEDULER & TELEGRAM METHODS ====================
@@ -1408,10 +1522,15 @@ class EnhancedTraderApp {
       this.showNotification('🚀 Generating personal recommendations...', 'info')
       
       // First check if user has personal Telegram configured
+      console.log('🔍 Checking Telegram configuration...')
       const telegramSettingsResponse = await axios.get('/api/personal-telegram/settings')
+      console.log('📥 Telegram settings response:', telegramSettingsResponse.data)
+      
       const telegramConfigured = telegramSettingsResponse.data.success && 
                                   telegramSettingsResponse.data.data.botToken && 
                                   telegramSettingsResponse.data.data.chatId
+      
+      console.log('✅ Telegram configured:', telegramConfigured)
 
       if (!telegramConfigured) {
         this.showNotification('⚠️ Please configure your personal Telegram bot in Settings first!', 'warning')
@@ -1815,19 +1934,19 @@ class EnhancedTraderApp {
     try {
       this.showNotification('🎯 Generating recommendations manually...', 'info')
       
-      const response = await axios.post('/api/scheduler/generate-now', {
-        settings: {
-          maxRecommendationsPerSession: 10,
-          minConfidenceLevel: 0.7,
-          enableTelegramNotifications: true
-        }
+      // For demo purposes, skip Telegram check
+      // TODO: Add personal Telegram configuration check
+      
+      const response = await axios.post('/api/recommendations/generate', {
+        portfolioId: this.selectedPortfolioId,
+        count: 10
       })
       
       if (response.data.success) {
-        const count = response.data.count || 0
-        this.showNotification(`✅ Generated ${count} recommendations successfully!`, 'success')
+        const recommendations = response.data.data || []
+        this.showNotification(`✅ Generated ${recommendations.length} recommendations successfully!`, 'success')
         
-        if (count > 0) {
+        if (recommendations.length > 0) {
           // Display recent recommendations
           this.displayRecentRecommendations(response.data.recommendations)
         }
@@ -1918,23 +2037,30 @@ class EnhancedTraderApp {
       if (response.data.success) {
         const status = response.data.status
         
-        // Update status indicator
+        // Update status indicator with null checks
         const indicator = document.getElementById('scheduler-indicator')
         const statusText = document.getElementById('scheduler-status')
         
-        if (status.isRunning) {
-          indicator.className = 'w-3 h-3 bg-green-500 rounded-full animate-pulse'
-          statusText.textContent = 'Status: Running'
-        } else {
-          indicator.className = 'w-3 h-3 bg-gray-400 rounded-full'
-          statusText.textContent = 'Status: Stopped'
+        if (indicator && statusText) {
+          if (status.isRunning) {
+            indicator.className = 'w-3 h-3 bg-green-500 rounded-full animate-pulse'
+            statusText.textContent = 'Status: Running'
+          } else {
+            indicator.className = 'w-3 h-3 bg-gray-400 rounded-full'
+            statusText.textContent = 'Status: Stopped'
+          }
         }
         
-        // Update time info
-        document.getElementById('last-run-time').textContent = 
-          status.lastRun ? new Date(status.lastRun).toLocaleString() : 'Never'
-        document.getElementById('next-run-time').textContent = 
-          status.nextRun ? new Date(status.nextRun).toLocaleString() : 'Not scheduled'
+        // Update time info with null checks
+        const lastRunEl = document.getElementById('last-run-time')
+        if (lastRunEl) {
+          lastRunEl.textContent = status.lastRun ? new Date(status.lastRun).toLocaleString() : 'Never'
+        }
+        
+        const nextRunEl = document.getElementById('next-run-time')
+        if (nextRunEl) {
+          nextRunEl.textContent = status.nextRun ? new Date(status.nextRun).toLocaleString() : 'Not scheduled'
+        }
       }
     } catch (error) {
       console.error('Status update error:', error)
@@ -2011,10 +2137,57 @@ class EnhancedTraderApp {
           </div>
           
           <div>
-            <label class="flex items-center">
+            <label class="flex items-center mb-3">
               <input type="checkbox" id="telegram-notifications" checked class="mr-2 rounded">
               <span class="text-sm text-gray-700">Enable Telegram notifications</span>
             </label>
+            
+            <!-- Telegram Configuration -->
+            <div id="telegram-config" class="ml-6 space-y-3 border-l-2 border-blue-200 pl-4">
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">
+                  Telegram Bot Token
+                  <a href="https://t.me/botfather" target="_blank" class="text-blue-500 hover:text-blue-700 ml-1">
+                    <i class="fas fa-external-link-alt text-xs"></i>
+                  </a>
+                </label>
+                <input 
+                  type="password" 
+                  id="telegram-bot-token" 
+                  placeholder="1234567890:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
+                  class="w-full text-xs border border-gray-300 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                >
+              </div>
+              
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">
+                  Your Chat ID
+                  <a href="https://t.me/userinfobot" target="_blank" class="text-blue-500 hover:text-blue-700 ml-1">
+                    <i class="fas fa-external-link-alt text-xs"></i>
+                  </a>
+                </label>
+                <input 
+                  type="text" 
+                  id="telegram-chat-id" 
+                  placeholder="123456789"
+                  class="w-full text-xs border border-gray-300 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                >
+              </div>
+              
+              <div class="flex items-center justify-between">
+                <div class="text-xs text-gray-500">
+                  <i class="fas fa-info-circle mr-1"></i>
+                  Need help? 
+                  <a href="#" class="text-blue-500 hover:text-blue-700" onclick="alert('1. Message @BotFather on Telegram\\n2. Create new bot with /newbot\\n3. Save your bot token\\n4. Message @userinfobot to get your Chat ID')">
+                    Setup Guide
+                  </a>
+                </div>
+                <button type="button" id="test-telegram" class="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition-colors duration-200">
+                  <i class="fas fa-plug mr-1"></i>
+                  Test Connection
+                </button>
+              </div>
+            </div>
           </div>
           
           <div class="flex space-x-3 pt-4">
@@ -2034,6 +2207,12 @@ class EnhancedTraderApp {
     // Setup slider handlers
     this.setupSettingsSliders()
     
+    // Setup Telegram toggle functionality
+    this.setupTelegramToggle()
+    
+    // Load existing settings
+    this.loadExistingSettings()
+    
     // Setup event listeners
     document.getElementById('close-settings').addEventListener('click', () => {
       document.body.removeChild(modal)
@@ -2047,6 +2226,12 @@ class EnhancedTraderApp {
       e.preventDefault()
       this.saveSchedulerSettings()
       document.body.removeChild(modal)
+    })
+    
+    // Test Telegram connection
+    document.getElementById('test-telegram').addEventListener('click', (e) => {
+      e.preventDefault()
+      this.testTelegramConnection()
     })
     
     // Close modal when clicking outside
@@ -2103,7 +2288,8 @@ class EnhancedTraderApp {
    */
   async saveSchedulerSettings() {
     try {
-      const settings = {
+      // Get all settings from the form
+      const scheduleSettings = {
         intervalMinutes: parseInt(document.getElementById('interval-setting').value),
         marketHoursOnly: document.getElementById('market-hours-only').checked,
         enableTelegramNotifications: document.getElementById('telegram-notifications').checked,
@@ -2113,15 +2299,76 @@ class EnhancedTraderApp {
           lowRisk: parseInt(document.getElementById('low-risk-slider').value)
         }
       }
-      
-      const response = await axios.post('/api/scheduler/settings', { settings })
+
+      // Get Telegram settings
+      const telegramEnabled = document.getElementById('telegram-notifications').checked
+      const botToken = document.getElementById('telegram-bot-token')?.value?.trim()
+      const chatId = document.getElementById('telegram-chat-id')?.value?.trim()
+
+      // Debug logging
+      console.log('💬 Telegram settings debug:', {
+        telegramEnabled,
+        botToken: botToken ? '***masked***' : 'empty',
+        chatId: chatId ? '***masked***' : 'empty'
+      })
+
+      // Validate Telegram settings if enabled
+      if (telegramEnabled && (!botToken || !chatId)) {
+        this.showNotification('⚠️ Please enter both Bot Token and Chat ID for Telegram notifications', 'warning')
+        return
+      }
+
+      // Save Telegram settings first
+      if (telegramEnabled && botToken && chatId) {
+        const telegramSettings = {
+          botToken,
+          chatId,
+          enabled: telegramEnabled,
+          autoSchedulerEnabled: telegramEnabled,
+          recommendationFrequency: scheduleSettings.intervalMinutes,
+          riskAllocation: {
+            high: scheduleSettings.riskAllocation.highRisk,
+            medium: scheduleSettings.riskAllocation.mediumRisk,
+            low: scheduleSettings.riskAllocation.lowRisk
+          }
+        }
+
+        console.log('📤 Saving Telegram settings:', telegramSettings)
+        const telegramResponse = await axios.post('/api/personal-telegram/settings', telegramSettings)
+        console.log('📥 Telegram response:', telegramResponse.data)
+        
+        if (!telegramResponse.data.success) {
+          this.showNotification(`❌ Failed to save Telegram settings: ${telegramResponse.data.error}`, 'error')
+          return
+        }
+      } else if (!telegramEnabled) {
+        // Disable Telegram if unchecked
+        const telegramSettings = {
+          botToken: '',
+          chatId: '',
+          enabled: false,
+          autoSchedulerEnabled: false,
+          recommendationFrequency: scheduleSettings.intervalMinutes,
+          riskAllocation: {
+            high: scheduleSettings.riskAllocation.highRisk,
+            medium: scheduleSettings.riskAllocation.mediumRisk,
+            low: scheduleSettings.riskAllocation.lowRisk
+          }
+        }
+        console.log('📤 Disabling Telegram notifications:', telegramSettings)
+        const disableResponse = await axios.post('/api/personal-telegram/settings', telegramSettings)
+        console.log('📥 Disable response:', disableResponse.data)
+      }
+
+      // Save general scheduler settings  
+      const response = await axios.post('/api/scheduler/settings', { settings: scheduleSettings })
       
       if (response.data.success) {
-        this.showNotification('✅ Settings saved successfully!', 'success')
+        this.showNotification('✅ All settings saved successfully!', 'success')
         
         // Update interval display
-        const hours = Math.floor(settings.intervalMinutes / 60)
-        const minutes = settings.intervalMinutes % 60
+        const hours = Math.floor(scheduleSettings.intervalMinutes / 60)
+        const minutes = scheduleSettings.intervalMinutes % 60
         let intervalText = ''
         if (hours > 0) intervalText += hours + ' hour' + (hours > 1 ? 's' : '')
         if (minutes > 0) intervalText += (hours > 0 ? ' ' : '') + minutes + ' min'
@@ -2351,16 +2598,21 @@ class EnhancedTraderApp {
     return change >= 0 ? 'text-green-600' : 'text-red-600'
   }
 
-  getAIConfidence() {
+  getRecommendationSuccessRate() {
+    // TODO: Implement recommendation success rate calculation
+    // This should analyze:
+    // 1. Past recommendations vs actual portfolio performance  
+    // 2. Successful trades based on AI recommendations
+    // 3. Time-weighted success rates
+    // 4. Compare recommended entry/exit points with actual results
+    
     if (this.portfolios.length === 0) return 'N/A'
     
-    // Calculate AI confidence based on portfolio performance and market conditions
     const selectedPortfolio = this.portfolios.find(p => p.id === this.selectedPortfolioId)
     if (!selectedPortfolio) return 'N/A'
     
-    // Generate confidence score based on portfolio health
-    const baseConfidence = 75 + (selectedPortfolio.total_value % 25)
-    return `${baseConfidence}%`
+    // For now, return N/A until we implement recommendation tracking
+    return 'N/A'
   }
 
   getRiskAlerts() {
@@ -2379,6 +2631,95 @@ class EnhancedTraderApp {
     if (alerts === 0) return 'text-green-600'
     if (alerts <= 2) return 'text-yellow-600'
     return 'text-red-600'
+  }
+
+  /**
+   * Setup Telegram toggle functionality
+   */
+  setupTelegramToggle() {
+    const telegramCheckbox = document.getElementById('telegram-notifications')
+    const telegramConfig = document.getElementById('telegram-config')
+    
+    if (telegramCheckbox && telegramConfig) {
+      const toggleVisibility = () => {
+        if (telegramCheckbox.checked) {
+          telegramConfig.style.display = 'block'
+        } else {
+          telegramConfig.style.display = 'none'
+        }
+      }
+      
+      telegramCheckbox.addEventListener('change', toggleVisibility)
+      toggleVisibility() // Set initial state
+    }
+  }
+
+  /**
+   * Load existing settings when modal opens
+   */
+  async loadExistingSettings() {
+    try {
+      // Load Telegram settings
+      const telegramResponse = await axios.get('/api/personal-telegram/settings')
+      if (telegramResponse.data.success && telegramResponse.data.data) {
+        const settings = telegramResponse.data.data
+        
+        // Fill Telegram fields
+        const botTokenField = document.getElementById('telegram-bot-token')
+        const chatIdField = document.getElementById('telegram-chat-id')
+        const telegramCheckbox = document.getElementById('telegram-notifications')
+        
+        if (botTokenField) botTokenField.value = settings.botToken || ''
+        if (chatIdField) chatIdField.value = settings.chatId || ''
+        if (telegramCheckbox) telegramCheckbox.checked = settings.enabled || false
+        
+        // Update risk allocation sliders if available
+        if (settings.riskAllocation) {
+          const highSlider = document.getElementById('high-risk-slider')
+          const mediumSlider = document.getElementById('medium-risk-slider')
+          const lowSlider = document.getElementById('low-risk-slider')
+          
+          if (highSlider) highSlider.value = settings.riskAllocation.high || 20
+          if (mediumSlider) mediumSlider.value = settings.riskAllocation.medium || 30
+          if (lowSlider) lowSlider.value = settings.riskAllocation.low || 50
+          
+          // Trigger update to show percentages
+          if (highSlider) highSlider.dispatchEvent(new Event('input'))
+        }
+        
+        // Update frequency setting
+        const intervalSetting = document.getElementById('interval-setting')
+        if (intervalSetting && settings.recommendationFrequency) {
+          intervalSetting.value = settings.recommendationFrequency
+        }
+        
+        // Trigger Telegram toggle to show/hide config
+        this.setupTelegramToggle()
+      }
+    } catch (error) {
+      console.error('Failed to load existing settings:', error)
+      // Don't show error notification - this is optional loading
+    }
+  }
+
+  /**
+   * Test Telegram connection
+   */
+  async testTelegramConnection() {
+    try {
+      this.showNotification('🧪 Testing Telegram connection...', 'info')
+      
+      const response = await axios.post('/api/personal-telegram/test')
+      
+      if (response.data.success) {
+        this.showNotification('✅ ' + response.data.data.message, 'success')
+      } else {
+        this.showNotification('❌ ' + response.data.error, 'error')
+      }
+    } catch (error) {
+      console.error('Telegram test failed:', error)
+      this.showNotification('❌ Failed to test Telegram connection', 'error')
+    }
   }
 }
 
