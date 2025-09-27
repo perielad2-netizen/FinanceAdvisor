@@ -2314,6 +2314,9 @@ class EnhancedTraderApp {
     // Setup Telegram toggle functionality
     this.setupTelegramToggle()
     
+    // Setup Push Notifications functionality (must be called after modal is created)
+    this.setupPushNotifications()
+    
     // Load existing settings
     this.loadExistingSettings()
     
@@ -2795,13 +2798,23 @@ class EnhancedTraderApp {
    * Setup Push Notifications functionality
    */
   setupPushNotifications() {
+    console.log('🔧 Setting up push notifications...')
+    
     const enablePushBtn = document.getElementById('enable-push')
     const pushCheckbox = document.getElementById('push-notifications')
     
+    console.log('🔧 Found enable-push button:', !!enablePushBtn)
+    console.log('🔧 Found push-notifications checkbox:', !!pushCheckbox)
+    
     if (enablePushBtn) {
-      enablePushBtn.addEventListener('click', async () => {
+      console.log('🔧 Adding click listener to enable-push button')
+      enablePushBtn.addEventListener('click', async (e) => {
+        console.log('🔧 Enable Push button clicked!')
+        e.preventDefault()
         await this.requestPushPermission()
       })
+    } else {
+      console.warn('⚠️ enable-push button not found!')
     }
 
     // Check current push notification status
@@ -2814,9 +2827,17 @@ class EnhancedTraderApp {
   async requestPushPermission() {
     try {
       console.log('📱 Requesting push notification permission...')
+      
+      // Update button to show progress
+      const enablePushBtn = document.getElementById('enable-push')
+      if (enablePushBtn) {
+        enablePushBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Setting up...'
+        enablePushBtn.disabled = true
+      }
 
       if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        this.showNotification('❌ Push notifications are not supported on this device', 'error')
+        this.showNotification('❌ Push notifications are not supported on this browser', 'error')
+        this.updatePushButtonStatus(false, 'Not Supported')
         return
       }
 
@@ -2824,7 +2845,8 @@ class EnhancedTraderApp {
       const permission = await Notification.requestPermission()
       
       if (permission !== 'granted') {
-        this.showNotification('❌ Push notification permission denied', 'error')
+        this.showNotification('❌ Push notification permission was denied. Please enable in your browser settings.', 'error')
+        this.updatePushButtonStatus(false)
         return
       }
 
@@ -2841,15 +2863,26 @@ class EnhancedTraderApp {
       const response = await axios.post('/api/notifications/push/subscribe', subscription)
       
       if (response.data.success) {
-        this.showNotification('✅ Push notifications enabled successfully!', 'success')
+        this.showNotification('✅ Push notifications enabled successfully! You\'ll now receive instant notifications.', 'success')
         this.updatePushButtonStatus(true)
       } else {
-        this.showNotification('❌ Failed to enable push notifications', 'error')
+        this.showNotification('❌ Failed to register push subscription on server', 'error')
+        this.updatePushButtonStatus(false)
       }
 
     } catch (error) {
       console.error('❌ Push notification setup failed:', error)
-      this.showNotification('❌ Failed to setup push notifications', 'error')
+      
+      if (error.name === 'NotSupportedError') {
+        this.showNotification('❌ Push notifications are not supported on this device/browser', 'error')
+        this.updatePushButtonStatus(false, 'Not Supported')
+      } else if (error.name === 'NotAllowedError') {
+        this.showNotification('❌ Push notifications were blocked. Please enable in browser settings.', 'error')
+        this.updatePushButtonStatus(false)
+      } else {
+        this.showNotification('❌ Failed to setup push notifications: ' + error.message, 'error')
+        this.updatePushButtonStatus(false)
+      }
     }
   }
 
