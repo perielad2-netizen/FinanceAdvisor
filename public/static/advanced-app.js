@@ -1613,12 +1613,50 @@ class EnhancedTraderApp {
                   <p class="text-xs text-gray-500 mt-1">Default: 20% high-risk, 30% medium-risk, 50% low-risk</p>
                 </div>
                 
-                <div class="flex items-center">
-                  <input type="checkbox" id="telegram-notifications" ${settings.enableTelegramNotifications ? 'checked' : ''}
-                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                  <label for="telegram-notifications" class="ml-2 block text-sm text-gray-900">
-                    Enable Telegram notifications
-                  </label>
+                <!-- Personal Telegram Setup -->
+                <div class="border-t border-gray-200 pt-4">
+                  <h4 class="text-sm font-medium text-gray-900 mb-3">Personal Telegram Setup</h4>
+                  
+                  <div class="space-y-3">
+                    <div class="flex items-center">
+                      <input type="checkbox" id="telegram-notifications" ${settings.enableTelegramNotifications ? 'checked' : ''}
+                        class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                      <label for="telegram-notifications" class="ml-2 block text-sm text-gray-900">
+                        Enable personal Telegram notifications
+                      </label>
+                    </div>
+                    
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Your Bot Token
+                      </label>
+                      <input type="password" id="telegram-bot-token" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        placeholder="1234567890:AAAA...">
+                      <p class="text-xs text-gray-500 mt-1">Get from @BotFather on Telegram</p>
+                    </div>
+                    
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Your Chat ID
+                      </label>
+                      <input type="text" id="telegram-chat-id" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        placeholder="123456789">
+                      <p class="text-xs text-gray-500 mt-1">Get from @userinfobot on Telegram</p>
+                    </div>
+                    
+                    <button type="button" id="test-personal-telegram" 
+                      class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                      🧪 Test My Telegram Connection
+                    </button>
+                  </div>
+                  
+                  <div class="bg-blue-50 p-3 rounded-md mt-3">
+                    <p class="text-xs text-blue-700">
+                      <strong>Privacy:</strong> Each user has their own personal Telegram bot. Your recommendations are private and personalized to your settings.
+                    </p>
+                  </div>
                 </div>
                 
                 <div class="flex justify-end space-x-3 pt-4">

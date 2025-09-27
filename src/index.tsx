@@ -14,6 +14,7 @@ import { recommendationRoutes } from './routes/recommendations'
 import { marketRoutes } from './routes/market'
 import advancedApiRoutes from './routes/advanced-api'
 import schedulerApiRoutes from './routes/scheduler-api'
+import { personalTelegramRoutes } from './routes/personal-telegram-api'
 import { initializeDatabase } from './database'
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>()
@@ -47,6 +48,7 @@ app.route('/api/recommendations', recommendationRoutes)
 app.route('/api/market', marketRoutes)
 app.route('/api/advanced', advancedApiRoutes)
 app.route('/api/scheduler', schedulerApiRoutes)
+app.route('/api/personal-telegram', personalTelegramRoutes)
 
 // Main application route
 app.get('/', (c) => {

@@ -27,11 +27,17 @@ export async function initializeDatabase(db: D1Database) {
         id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
         user_id TEXT NOT NULL UNIQUE,
         email_notifications BOOLEAN DEFAULT TRUE,
-        telegram_notifications BOOLEAN DEFAULT TRUE,
+        telegram_notifications BOOLEAN DEFAULT FALSE,
         whatsapp_notifications BOOLEAN DEFAULT TRUE,
         phone_notifications BOOLEAN DEFAULT FALSE,
+        telegram_bot_token TEXT,
+        telegram_chat_id TEXT,
         recommendation_frequency INTEGER DEFAULT 120,
         risk_tolerance TEXT DEFAULT 'moderate',
+        auto_scheduler_enabled BOOLEAN DEFAULT FALSE,
+        risk_allocation_high INTEGER DEFAULT 20,
+        risk_allocation_medium INTEGER DEFAULT 30,
+        risk_allocation_low INTEGER DEFAULT 50,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
