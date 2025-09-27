@@ -126,7 +126,7 @@ class EnhancedTraderApp {
                   </select>
                   <input type="tel" id="register-phone" required
                     class="flex-1 px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                    placeholder="Phone number (e.g., 501234567)"
+                    placeholder="Phone number"
                     pattern="[0-9]{7,12}"
                     title="Enter phone number without country code">
                 </div>
