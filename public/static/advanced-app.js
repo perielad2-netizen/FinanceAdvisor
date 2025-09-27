@@ -1197,6 +1197,9 @@ class EnhancedTraderApp {
     this.safeAddEventListener('test-telegram-btn', 'click', () => this.testTelegram())
     this.safeAddEventListener('scheduler-settings-btn', 'click', () => this.showSchedulerSettings())
     
+    // Setup push notifications on dashboard load
+    this.setupPushNotifications()
+    
     console.log('✅ Dashboard event listeners setup complete')
   }
 
@@ -1928,27 +1931,52 @@ class EnhancedTraderApp {
   // ============ SCHEDULER & TELEGRAM METHODS ============
   
   /**
-   * Generate recommendations manually (now button)
+   * Generate recommendations manually using new unified notification system
    */
   async generateRecommendationsNow() {
     try {
-      this.showNotification('🎯 Generating recommendations manually...', 'info')
+      this.showNotification('🚀 Generating recommendations with multi-channel notifications...', 'info')
       
-      // For demo purposes, skip Telegram check
-      // TODO: Add personal Telegram configuration check
+      if (!this.selectedPortfolioId) {
+        this.showNotification('⚠️ Please select a portfolio first', 'warning')
+        return
+      }
       
-      const response = await axios.post('/api/recommendations/generate', {
+      // Generate recommendations and send via unified notification system
+      const response = await axios.post('/api/notifications/send-recommendation', {
         portfolioId: this.selectedPortfolioId,
-        count: 10
+        count: 5,
+        useUnifiedNotifications: true,
+        recommendationData: {
+          symbols: ['AAPL', 'MSFT', 'GOOGL', 'TSLA', 'NVDA'], // Example symbols
+          analysisType: 'ai_comprehensive',
+          urgency: 'medium'
+        }
       })
       
       if (response.data.success) {
-        const recommendations = response.data.data || []
-        this.showNotification(`✅ Generated ${recommendations.length} recommendations successfully!`, 'success')
+        const { push, email, telegram, details } = response.data
         
-        if (recommendations.length > 0) {
-          // Display recent recommendations
-          this.displayRecentRecommendations(response.data.recommendations)
+        let successMessage = '✅ Recommendations generated and sent via: '
+        const methods = []
+        if (push) methods.push('📱 Push')
+        if (email) methods.push('📧 Email')
+        if (telegram) methods.push('📱 Telegram')
+        
+        successMessage += methods.join(', ')
+        
+        this.showNotification(successMessage, 'success')
+        
+        // Display the recommendations in UI
+        if (response.data.recommendations) {
+          this.displayLatestRecommendations(response.data.recommendations)
+        }
+        
+        // Show detailed delivery info
+        if (details && details.length > 0) {
+          setTimeout(() => {
+            this.showNotification(`📋 Delivery details: ${details.join(', ')}`, 'info')
+          }, 2000)
         }
       } else {
         this.showNotification(`❌ ${response.data.message}`, 'error')
@@ -2136,14 +2164,52 @@ class EnhancedTraderApp {
             </label>
           </div>
           
-          <div>
-            <label class="flex items-center mb-3">
-              <input type="checkbox" id="telegram-notifications" checked class="mr-2 rounded">
-              <span class="text-sm text-gray-700">Enable Telegram notifications</span>
-            </label>
+          <!-- Notification Methods -->
+          <div class="border-t border-gray-200 pt-4 mt-4">
+            <h4 class="text-sm font-medium text-gray-700 mb-3">Notification Methods</h4>
             
-            <!-- Telegram Configuration -->
-            <div id="telegram-config" class="ml-6 space-y-3 border-l-2 border-blue-200 pl-4">
+            <!-- Push Notifications -->
+            <div class="mb-4">
+              <label class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <input type="checkbox" id="push-notifications" checked class="mr-2 rounded">
+                  <span class="text-sm text-gray-700">Browser Push Notifications</span>
+                  <span class="ml-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Recommended</span>
+                </div>
+                <button type="button" id="enable-push" class="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors duration-200">
+                  <i class="fas fa-bell mr-1"></i>
+                  Enable
+                </button>
+              </label>
+              <p class="text-xs text-gray-500 ml-6 mt-1">Instant notifications even when app is closed • Free • Works on all devices</p>
+            </div>
+
+            <!-- Email Notifications -->
+            <div class="mb-4">
+              <label class="flex items-center">
+                <input type="checkbox" id="email-notifications" checked class="mr-2 rounded">
+                <span class="text-sm text-gray-700">Email Notifications</span>
+                <span class="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Backup</span>
+              </label>
+              <p class="text-xs text-gray-500 ml-6 mt-1">Reliable backup delivery to your email • Works everywhere • No setup required</p>
+            </div>
+
+            <!-- Telegram Notifications (Advanced) -->
+            <div class="mb-4">
+              <label class="flex items-center justify-between mb-2">
+                <div class="flex items-center">
+                  <input type="checkbox" id="telegram-notifications" class="mr-2 rounded">
+                  <span class="text-sm text-gray-700">Telegram Bot (Advanced)</span>
+                  <span class="ml-2 text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">Advanced Users</span>
+                </div>
+                <button type="button" id="telegram-help" class="text-xs bg-gray-200 text-gray-700 px-3 py-1 rounded hover:bg-gray-300 transition-colors duration-200">
+                  <i class="fas fa-question-circle mr-1"></i>
+                  Help
+                </button>
+              </label>
+              
+              <!-- Telegram Configuration -->
+              <div id="telegram-config" class="ml-6 space-y-3 border-l-2 border-blue-200 pl-4 hidden">
               <div>
                 <label class="block text-xs font-medium text-gray-600 mb-1">
                   Telegram Bot Token
@@ -2300,8 +2366,10 @@ class EnhancedTraderApp {
         }
       }
 
-      // Get Telegram settings
-      const telegramEnabled = document.getElementById('telegram-notifications').checked
+      // Get notification preferences (Push + Email + Telegram)
+      const pushEnabled = document.getElementById('push-notifications')?.checked || false
+      const emailEnabled = document.getElementById('email-notifications')?.checked || false
+      const telegramEnabled = document.getElementById('telegram-notifications')?.checked || false
       const botToken = document.getElementById('telegram-bot-token')?.value?.trim()
       const chatId = document.getElementById('telegram-chat-id')?.value?.trim()
 
@@ -2360,11 +2428,34 @@ class EnhancedTraderApp {
         console.log('📥 Disable response:', disableResponse.data)
       }
 
+      // Save notification preferences to new unified system
+      const notificationPreferences = {
+        push_notifications: pushEnabled,
+        email_notifications: emailEnabled,
+        telegram_notifications: telegramEnabled,
+        user_preferences: {
+          intervalMinutes: scheduleSettings.intervalMinutes,
+          marketHoursOnly: scheduleSettings.marketHoursOnly,
+          riskAllocation: scheduleSettings.riskAllocation
+        }
+      }
+      
+      const notifResponse = await axios.post('/api/notifications/preferences', notificationPreferences)
+      if (!notifResponse.data.success) {
+        this.showNotification(`❌ Failed to save notification preferences: ${notifResponse.data.error}`, 'error')
+        return
+      }
+
       // Save general scheduler settings  
       const response = await axios.post('/api/scheduler/settings', { settings: scheduleSettings })
       
       if (response.data.success) {
-        this.showNotification('✅ All settings saved successfully!', 'success')
+        const enabledMethods = []
+        if (pushEnabled) enabledMethods.push('Push')
+        if (emailEnabled) enabledMethods.push('Email')
+        if (telegramEnabled) enabledMethods.push('Telegram')
+        
+        this.showNotification(`✅ Settings saved! Notifications: ${enabledMethods.join(' + ')}`, 'success')
         
         // Update interval display
         const hours = Math.floor(scheduleSettings.intervalMinutes / 60)
@@ -2643,15 +2734,218 @@ class EnhancedTraderApp {
     if (telegramCheckbox && telegramConfig) {
       const toggleVisibility = () => {
         if (telegramCheckbox.checked) {
-          telegramConfig.style.display = 'block'
+          telegramConfig.classList.remove('hidden')
         } else {
-          telegramConfig.style.display = 'none'
+          telegramConfig.classList.add('hidden')
         }
       }
       
       telegramCheckbox.addEventListener('change', toggleVisibility)
       toggleVisibility() // Set initial state
     }
+
+    // Setup Telegram help button
+    const telegramHelp = document.getElementById('telegram-help')
+    if (telegramHelp) {
+      telegramHelp.addEventListener('click', () => {
+        this.showTelegramSetupGuide()
+      })
+    }
+  }
+
+  /**
+   * Setup Push Notifications functionality
+   */
+  setupPushNotifications() {
+    const enablePushBtn = document.getElementById('enable-push')
+    const pushCheckbox = document.getElementById('push-notifications')
+    
+    if (enablePushBtn) {
+      enablePushBtn.addEventListener('click', async () => {
+        await this.requestPushPermission()
+      })
+    }
+
+    // Check current push notification status
+    this.checkPushNotificationStatus()
+  }
+
+  /**
+   * Request push notification permission and subscribe
+   */
+  async requestPushPermission() {
+    try {
+      console.log('📱 Requesting push notification permission...')
+
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        this.showNotification('❌ Push notifications are not supported on this device', 'error')
+        return
+      }
+
+      // Request permission
+      const permission = await Notification.requestPermission()
+      
+      if (permission !== 'granted') {
+        this.showNotification('❌ Push notification permission denied', 'error')
+        return
+      }
+
+      // Get service worker registration
+      const registration = await navigator.serviceWorker.ready
+      
+      // Subscribe to push notifications
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: this.urlBase64ToUint8Array('BP8tCQJg4TjBL_9l0w-j3YaEtQN3-e0oLbPgLb-dokhJH8jkgv7dJQz1QNIsJR8RPXpHQAM2VtUJBYjgkc6W1os') // Demo VAPID key
+      })
+
+      // Send subscription to server
+      const response = await axios.post('/api/notifications/push/subscribe', subscription)
+      
+      if (response.data.success) {
+        this.showNotification('✅ Push notifications enabled successfully!', 'success')
+        this.updatePushButtonStatus(true)
+      } else {
+        this.showNotification('❌ Failed to enable push notifications', 'error')
+      }
+
+    } catch (error) {
+      console.error('❌ Push notification setup failed:', error)
+      this.showNotification('❌ Failed to setup push notifications', 'error')
+    }
+  }
+
+  /**
+   * Check current push notification status
+   */
+  async checkPushNotificationStatus() {
+    try {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        this.updatePushButtonStatus(false, 'Not Supported')
+        return
+      }
+
+      const permission = Notification.permission
+      const registration = await navigator.serviceWorker.ready
+      const subscription = await registration.pushManager.getSubscription()
+
+      if (permission === 'granted' && subscription) {
+        this.updatePushButtonStatus(true)
+      } else {
+        this.updatePushButtonStatus(false)
+      }
+    } catch (error) {
+      console.error('❌ Failed to check push status:', error)
+    }
+  }
+
+  /**
+   * Update push notification button status
+   */
+  updatePushButtonStatus(enabled, customText = null) {
+    const enablePushBtn = document.getElementById('enable-push')
+    const pushCheckbox = document.getElementById('push-notifications')
+    
+    if (enablePushBtn) {
+      if (customText) {
+        enablePushBtn.innerHTML = `<i class="fas fa-times mr-1"></i>${customText}`
+        enablePushBtn.disabled = true
+        enablePushBtn.className = 'text-xs bg-gray-400 text-white px-3 py-1 rounded cursor-not-allowed'
+      } else if (enabled) {
+        enablePushBtn.innerHTML = '<i class="fas fa-check mr-1"></i>Enabled'
+        enablePushBtn.className = 'text-xs bg-green-600 text-white px-3 py-1 rounded'
+        enablePushBtn.disabled = true
+      } else {
+        enablePushBtn.innerHTML = '<i class="fas fa-bell mr-1"></i>Enable'
+        enablePushBtn.className = 'text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors duration-200'
+        enablePushBtn.disabled = false
+      }
+    }
+    
+    if (pushCheckbox) {
+      pushCheckbox.checked = enabled
+    }
+  }
+
+  /**
+   * Convert VAPID key to Uint8Array (for push subscription)
+   */
+  urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4)
+    const base64 = (base64String + padding)
+      .replace(/-/g, '+')
+      .replace(/_/g, '/')
+
+    const rawData = window.atob(base64)
+    const outputArray = new Uint8Array(rawData.length)
+
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i)
+    }
+    return outputArray
+  }
+
+  /**
+   * Show Telegram setup guide modal
+   */
+  showTelegramSetupGuide() {
+    const modal = document.createElement('div')
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-gray-900">
+            <i class="fab fa-telegram-plane mr-2 text-blue-500"></i>
+            Telegram Bot Setup Guide
+          </h3>
+          <button id="close-guide" class="text-gray-400 hover:text-gray-600">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+        
+        <div class="space-y-4 text-sm">
+          <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+            <p class="text-yellow-800 font-medium">⚠️ Advanced Feature</p>
+            <p class="text-yellow-700 text-xs mt-1">This requires technical knowledge. We recommend using Push or Email notifications instead.</p>
+          </div>
+          
+          <div class="space-y-3">
+            <h4 class="font-medium text-gray-900">Step 1: Create Your Bot</h4>
+            <ol class="list-decimal list-inside space-y-1 text-gray-600 text-xs">
+              <li>Open Telegram and search for <a href="https://t.me/botfather" target="_blank" class="text-blue-600 underline">@BotFather</a></li>
+              <li>Send the command: <code class="bg-gray-100 px-1 rounded">/newbot</code></li>
+              <li>Follow the instructions to create your bot</li>
+              <li>Copy the Bot Token (e.g., <code class="bg-gray-100 px-1 rounded">1234567890:ABC...</code>)</li>
+            </ol>
+            
+            <h4 class="font-medium text-gray-900 mt-4">Step 2: Get Your Chat ID</h4>
+            <ol class="list-decimal list-inside space-y-1 text-gray-600 text-xs">
+              <li>Search for <a href="https://t.me/userinfobot" target="_blank" class="text-blue-600 underline">@userinfobot</a> on Telegram</li>
+              <li>Send any message to the bot</li>
+              <li>Copy your Chat ID (e.g., <code class="bg-gray-100 px-1 rounded">123456789</code>)</li>
+            </ol>
+            
+            <h4 class="font-medium text-gray-900 mt-4">Step 3: Configure</h4>
+            <p class="text-gray-600 text-xs">Enter both values in the Telegram configuration above and test the connection.</p>
+          </div>
+        </div>
+        
+        <div class="mt-6 flex justify-end">
+          <button id="close-guide-btn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors duration-200">
+            Got it!
+          </button>
+        </div>
+      </div>
+    `
+    
+    document.body.appendChild(modal)
+    
+    const closeModal = () => document.body.removeChild(modal)
+    document.getElementById('close-guide').addEventListener('click', closeModal)
+    document.getElementById('close-guide-btn').addEventListener('click', closeModal)
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal()
+    })
   }
 
   /**

@@ -15,6 +15,7 @@ import { marketRoutes } from './routes/market'
 import advancedApiRoutes from './routes/advanced-api'
 import schedulerApiRoutes from './routes/scheduler-api'
 import { personalTelegramRoutes } from './routes/personal-telegram-api'
+import { notificationsRoutes } from './routes/notifications-api'
 import { initializeDatabase } from './database'
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>()
@@ -49,6 +50,7 @@ app.route('/api/market', marketRoutes)
 app.route('/api/advanced', advancedApiRoutes)
 app.route('/api/scheduler', schedulerApiRoutes)
 app.route('/api/personal-telegram', personalTelegramRoutes)
+app.route('/api/notifications', notificationsRoutes)
 
 // Main application route
 app.get('/', (c) => {
@@ -79,6 +81,18 @@ app.get('/', (c) => {
         
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script src="/static/advanced-app.js?v=${Date.now()}"></script>
+        <script>
+          // Register Service Worker for Push Notifications
+          if ('serviceWorker' in navigator && 'PushManager' in window) {
+            navigator.serviceWorker.register('/static/sw.js')
+              .then(registration => {
+                console.log('🔧 Service Worker registered:', registration.scope);
+              })
+              .catch(error => {
+                console.error('❌ Service Worker registration failed:', error);
+              });
+          }
+        </script>
     </body>
     </html>
   `)
