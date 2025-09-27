@@ -1765,6 +1765,41 @@ class EnhancedTraderApp {
                   <p class="text-xs text-gray-500 mt-1">Default: 20% high-risk, 30% medium-risk, 50% low-risk</p>
                 </div>
                 
+                <!-- Notification Settings -->
+                <div class="border-t border-gray-200 pt-4">
+                  <h4 class="text-sm font-medium text-gray-900 mb-3">Notification Settings</h4>
+                  
+                  <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center">
+                        <input type="checkbox" id="push-notifications" 
+                          class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label for="push-notifications" class="ml-2 block text-sm text-gray-900">
+                          Enable push notifications
+                        </label>
+                      </div>
+                      <button type="button" id="enable-push-btn" 
+                        class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-medium">
+                        Enable
+                      </button>
+                    </div>
+                    
+                    <div class="flex items-center">
+                      <input type="checkbox" id="email-notifications" 
+                        class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded">
+                      <label for="email-notifications" class="ml-2 block text-sm text-gray-900">
+                        Enable email notifications
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div class="bg-green-50 p-3 rounded-md mt-3">
+                    <p class="text-xs text-green-700">
+                      <strong>Simple:</strong> Push notifications (instant) + Email (backup) work automatically. No setup needed!
+                    </p>
+                  </div>
+                </div>
+                
                 <!-- Personal Telegram Setup -->
                 <div class="border-t border-gray-200 pt-4">
                   <h4 class="text-sm font-medium text-gray-900 mb-3">Personal Telegram Setup</h4>
@@ -1832,7 +1867,25 @@ class EnhancedTraderApp {
       // Setup modal handlers
       document.getElementById('close-settings').addEventListener('click', this.closeSettingsModal)
       document.getElementById('cancel-settings').addEventListener('click', this.closeSettingsModal)
-      document.getElementById('settings-form').addEventListener('submit', (e) => this.saveSchedulerSettings(e))
+      document.getElementById('settings-form').addEventListener('submit', async (e) => {
+        e.preventDefault()
+        console.log('📝 Form submit event - preventing default')
+        try {
+          await this.saveSchedulerSettings(e)
+          console.log('✅ Settings saved successfully, closing modal')
+          this.closeSettingsModal()
+        } catch (error) {
+          console.error('❌ Error saving settings:', error)
+        }
+      })
+      
+      // Add push notification enable button handler
+      document.getElementById('enable-push-btn')?.addEventListener('click', () => {
+        this.enablePushNotifications()
+      })
+      
+      // Load existing settings (Telegram + Push/Email preferences)
+      await this.loadExistingSettings()
       
     } catch (error) {
       console.error('Failed to show settings:', error)
@@ -1862,6 +1915,8 @@ class EnhancedTraderApp {
       const mediumRisk = parseInt(document.getElementById('medium-risk').value)
       const lowRisk = parseInt(document.getElementById('low-risk').value)
       const enableTelegram = document.getElementById('telegram-notifications').checked
+      const enablePush = document.getElementById('push-notifications').checked
+      const enableEmail = document.getElementById('email-notifications').checked
       
       // Validate risk allocation
       if (highRisk + mediumRisk + lowRisk !== 100) {
@@ -1875,10 +1930,22 @@ class EnhancedTraderApp {
         enableTelegramNotifications: enableTelegram
       }
       
+      // Save scheduler settings
       const response = await axios.post('/api/scheduler/settings', { settings })
       
-      if (response.data.success) {
-        this.showNotification('✅ Settings saved successfully', 'success')
+      // Save notification preferences
+      const preferencesData = {
+        pushEnabled: enablePush,
+        emailEnabled: enableEmail,
+        telegramEnabled: enableTelegram
+      }
+      
+      console.log('💾 Saving preferences:', preferencesData)
+      const preferencesResponse = await axios.post('/api/notifications/preferences', preferencesData)
+      
+      if (response.data.success && preferencesResponse.data.success) {
+        this.showNotification('✅ All settings saved successfully', 'success')
+        console.log('✅ Both settings and preferences saved successfully')
         this.closeSettingsModal()
         
         // Update interval display
@@ -2134,220 +2201,7 @@ class EnhancedTraderApp {
     }
   }
 
-  /**
-   * Show scheduler settings modal
-   */
-  showSchedulerSettings() {
-    const modal = document.createElement('div')
-    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'
-    modal.innerHTML = `
-      <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
-        <div class="flex items-center justify-between mb-6">
-          <h3 class="text-xl font-semibold text-gray-900">
-            <i class="fas fa-cog mr-2 text-blue-600"></i>
-            Scheduler Settings
-          </h3>
-          <button id="close-settings" class="text-gray-400 hover:text-gray-600">
-            <i class="fas fa-times text-xl"></i>
-          </button>
-        </div>
-        
-        <form id="settings-form" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Recommendation Interval (minutes)
-            </label>
-            <select id="interval-setting" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-              <option value="60">1 hour</option>
-              <option value="120" selected>2 hours (default)</option>
-              <option value="180">3 hours</option>
-              <option value="240">4 hours</option>
-              <option value="360">6 hours</option>
-            </select>
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Risk Allocation
-            </label>
-            <div class="space-y-2">
-              <div class="flex items-center justify-between">
-                <span class="text-sm text-gray-600">High Risk:</span>
-                <div class="flex items-center space-x-2">
-                  <input type="range" id="high-risk-slider" min="0" max="50" value="20" class="flex-1">
-                  <span id="high-risk-value" class="text-sm font-medium w-8">20%</span>
-                </div>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-sm text-gray-600">Medium Risk:</span>
-                <div class="flex items-center space-x-2">
-                  <input type="range" id="medium-risk-slider" min="0" max="60" value="30" class="flex-1">
-                  <span id="medium-risk-value" class="text-sm font-medium w-8">30%</span>
-                </div>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-sm text-gray-600">Low Risk:</span>
-                <div class="flex items-center space-x-2">
-                  <input type="range" id="low-risk-slider" min="20" max="80" value="50" class="flex-1">
-                  <span id="low-risk-value" class="text-sm font-medium w-8">50%</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div>
-            <label class="flex items-center">
-              <input type="checkbox" id="market-hours-only" checked class="mr-2 rounded">
-              <span class="text-sm text-gray-700">Run only during market hours</span>
-            </label>
-          </div>
-          
-          <!-- Notification Methods -->
-          <div class="border-t border-gray-200 pt-4 mt-4">
-            <h4 class="text-sm font-medium text-gray-700 mb-3">Notification Methods</h4>
-            
-            <!-- Push Notifications -->
-            <div class="mb-4">
-              <label class="flex items-center justify-between">
-                <div class="flex items-center">
-                  <input type="checkbox" id="push-notifications" checked class="mr-2 rounded">
-                  <span class="text-sm text-gray-700">Browser Push Notifications</span>
-                  <span class="ml-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Recommended</span>
-                </div>
-                <button type="button" id="enable-push" class="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors duration-200">
-                  <i class="fas fa-bell mr-1"></i>
-                  Enable
-                </button>
-              </label>
-              <p class="text-xs text-gray-500 ml-6 mt-1">Instant notifications even when app is closed • Free • Works on all devices</p>
-            </div>
-
-            <!-- Email Notifications -->
-            <div class="mb-4">
-              <label class="flex items-center">
-                <input type="checkbox" id="email-notifications" checked class="mr-2 rounded">
-                <span class="text-sm text-gray-700">Email Notifications</span>
-                <span class="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Backup</span>
-              </label>
-              <p class="text-xs text-gray-500 ml-6 mt-1">Reliable backup delivery to your email • Works everywhere • No setup required</p>
-            </div>
-
-            <!-- Telegram Notifications (Advanced) -->
-            <div class="mb-4">
-              <label class="flex items-center justify-between mb-2">
-                <div class="flex items-center">
-                  <input type="checkbox" id="telegram-notifications" class="mr-2 rounded">
-                  <span class="text-sm text-gray-700">Telegram Bot (Advanced)</span>
-                  <span class="ml-2 text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">Advanced Users</span>
-                </div>
-                <button type="button" id="telegram-help" class="text-xs bg-gray-200 text-gray-700 px-3 py-1 rounded hover:bg-gray-300 transition-colors duration-200">
-                  <i class="fas fa-question-circle mr-1"></i>
-                  Help
-                </button>
-              </label>
-              
-              <!-- Telegram Configuration -->
-              <div id="telegram-config" class="ml-6 space-y-3 border-l-2 border-blue-200 pl-4 hidden">
-              <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">
-                  Telegram Bot Token
-                  <a href="https://t.me/botfather" target="_blank" class="text-blue-500 hover:text-blue-700 ml-1">
-                    <i class="fas fa-external-link-alt text-xs"></i>
-                  </a>
-                </label>
-                <input 
-                  type="password" 
-                  id="telegram-bot-token" 
-                  placeholder="1234567890:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
-                  class="w-full text-xs border border-gray-300 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-transparent"
-                >
-              </div>
-              
-              <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">
-                  Your Chat ID
-                  <a href="https://t.me/userinfobot" target="_blank" class="text-blue-500 hover:text-blue-700 ml-1">
-                    <i class="fas fa-external-link-alt text-xs"></i>
-                  </a>
-                </label>
-                <input 
-                  type="text" 
-                  id="telegram-chat-id" 
-                  placeholder="123456789"
-                  class="w-full text-xs border border-gray-300 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-transparent"
-                >
-              </div>
-              
-              <div class="flex items-center justify-between">
-                <div class="text-xs text-gray-500">
-                  <i class="fas fa-info-circle mr-1"></i>
-                  Need help? 
-                  <a href="#" class="text-blue-500 hover:text-blue-700" onclick="alert('1. Message @BotFather on Telegram\\n2. Create new bot with /newbot\\n3. Save your bot token\\n4. Message @userinfobot to get your Chat ID')">
-                    Setup Guide
-                  </a>
-                </div>
-                <button type="button" id="test-telegram" class="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition-colors duration-200">
-                  <i class="fas fa-plug mr-1"></i>
-                  Test Connection
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          <div class="flex space-x-3 pt-4">
-            <button type="submit" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200">
-              Save Settings
-            </button>
-            <button type="button" id="cancel-settings" class="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-200">
-              Cancel
-            </button>
-          </div>
-        </form>
-      </div>
-    `
-    
-    document.body.appendChild(modal)
-    
-    // Setup slider handlers
-    this.setupSettingsSliders()
-    
-    // Setup Telegram toggle functionality
-    this.setupTelegramToggle()
-    
-    // Setup Push Notifications functionality (must be called after modal is created)
-    this.setupPushNotifications()
-    
-    // Load existing settings
-    this.loadExistingSettings()
-    
-    // Setup event listeners
-    document.getElementById('close-settings').addEventListener('click', () => {
-      document.body.removeChild(modal)
-    })
-    
-    document.getElementById('cancel-settings').addEventListener('click', () => {
-      document.body.removeChild(modal)
-    })
-    
-    document.getElementById('settings-form').addEventListener('submit', (e) => {
-      e.preventDefault()
-      this.saveSchedulerSettings()
-      document.body.removeChild(modal)
-    })
-    
-    // Test Telegram connection
-    document.getElementById('test-telegram').addEventListener('click', (e) => {
-      e.preventDefault()
-      this.testTelegramConnection()
-    })
-    
-    // Close modal when clicking outside
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) {
-        document.body.removeChild(modal)
-      }
-    })
-  }
+  // Old showSchedulerSettings function removed - using the newer async version instead
 
   /**
    * Setup settings sliders with real-time updates
@@ -2390,130 +2244,7 @@ class EnhancedTraderApp {
     lowSlider.addEventListener('input', updateValues)
   }
 
-  /**
-   * Save scheduler settings
-   */
-  async saveSchedulerSettings() {
-    try {
-      // Get all settings from the form
-      const scheduleSettings = {
-        intervalMinutes: parseInt(document.getElementById('interval-setting').value),
-        marketHoursOnly: document.getElementById('market-hours-only').checked,
-        enableTelegramNotifications: document.getElementById('telegram-notifications').checked,
-        riskAllocation: {
-          highRisk: parseInt(document.getElementById('high-risk-slider').value),
-          mediumRisk: parseInt(document.getElementById('medium-risk-slider').value),
-          lowRisk: parseInt(document.getElementById('low-risk-slider').value)
-        }
-      }
-
-      // Get notification preferences (Push + Email + Telegram)
-      const pushEnabled = document.getElementById('push-notifications')?.checked || false
-      const emailEnabled = document.getElementById('email-notifications')?.checked || false
-      const telegramEnabled = document.getElementById('telegram-notifications')?.checked || false
-      const botToken = document.getElementById('telegram-bot-token')?.value?.trim()
-      const chatId = document.getElementById('telegram-chat-id')?.value?.trim()
-
-      // Debug logging
-      console.log('💬 Telegram settings debug:', {
-        telegramEnabled,
-        botToken: botToken ? '***masked***' : 'empty',
-        chatId: chatId ? '***masked***' : 'empty'
-      })
-
-      // Validate Telegram settings if enabled
-      if (telegramEnabled && (!botToken || !chatId)) {
-        this.showNotification('⚠️ Please enter both Bot Token and Chat ID for Telegram notifications', 'warning')
-        return
-      }
-
-      // Save Telegram settings first
-      if (telegramEnabled && botToken && chatId) {
-        const telegramSettings = {
-          botToken,
-          chatId,
-          enabled: telegramEnabled,
-          autoSchedulerEnabled: telegramEnabled,
-          recommendationFrequency: scheduleSettings.intervalMinutes,
-          riskAllocation: {
-            high: scheduleSettings.riskAllocation.highRisk,
-            medium: scheduleSettings.riskAllocation.mediumRisk,
-            low: scheduleSettings.riskAllocation.lowRisk
-          }
-        }
-
-        console.log('📤 Saving Telegram settings:', telegramSettings)
-        const telegramResponse = await axios.post('/api/personal-telegram/settings', telegramSettings)
-        console.log('📥 Telegram response:', telegramResponse.data)
-        
-        if (!telegramResponse.data.success) {
-          this.showNotification(`❌ Failed to save Telegram settings: ${telegramResponse.data.error}`, 'error')
-          return
-        }
-      } else if (!telegramEnabled) {
-        // Disable Telegram if unchecked
-        const telegramSettings = {
-          botToken: '',
-          chatId: '',
-          enabled: false,
-          autoSchedulerEnabled: false,
-          recommendationFrequency: scheduleSettings.intervalMinutes,
-          riskAllocation: {
-            high: scheduleSettings.riskAllocation.highRisk,
-            medium: scheduleSettings.riskAllocation.mediumRisk,
-            low: scheduleSettings.riskAllocation.lowRisk
-          }
-        }
-        console.log('📤 Disabling Telegram notifications:', telegramSettings)
-        const disableResponse = await axios.post('/api/personal-telegram/settings', telegramSettings)
-        console.log('📥 Disable response:', disableResponse.data)
-      }
-
-      // Save notification preferences to new unified system
-      const notificationPreferences = {
-        push_notifications: pushEnabled,
-        email_notifications: emailEnabled,
-        telegram_notifications: telegramEnabled,
-        user_preferences: {
-          intervalMinutes: scheduleSettings.intervalMinutes,
-          marketHoursOnly: scheduleSettings.marketHoursOnly,
-          riskAllocation: scheduleSettings.riskAllocation
-        }
-      }
-      
-      const notifResponse = await axios.post('/api/notifications/preferences', notificationPreferences)
-      if (!notifResponse.data.success) {
-        this.showNotification(`❌ Failed to save notification preferences: ${notifResponse.data.error}`, 'error')
-        return
-      }
-
-      // Save general scheduler settings  
-      const response = await axios.post('/api/scheduler/settings', { settings: scheduleSettings })
-      
-      if (response.data.success) {
-        const enabledMethods = []
-        if (pushEnabled) enabledMethods.push('Push')
-        if (emailEnabled) enabledMethods.push('Email')
-        if (telegramEnabled) enabledMethods.push('Telegram')
-        
-        this.showNotification(`✅ Settings saved! Notifications: ${enabledMethods.join(' + ')}`, 'success')
-        
-        // Update interval display
-        const hours = Math.floor(scheduleSettings.intervalMinutes / 60)
-        const minutes = scheduleSettings.intervalMinutes % 60
-        let intervalText = ''
-        if (hours > 0) intervalText += hours + ' hour' + (hours > 1 ? 's' : '')
-        if (minutes > 0) intervalText += (hours > 0 ? ' ' : '') + minutes + ' min'
-        document.getElementById('run-interval').textContent = intervalText
-        
-      } else {
-        this.showNotification(`❌ ${response.data.message}`, 'error')
-      }
-    } catch (error) {
-      console.error('Settings save error:', error)
-      this.showNotification('❌ Failed to save settings', 'error')
-    }
-  }
+  // Old duplicate saveSchedulerSettings function removed - using the newer version instead
 
   /**
    * Display recent recommendations in the dashboard
@@ -3032,7 +2763,7 @@ class EnhancedTraderApp {
           const response = await axios.get('/api/notifications/preferences', {
             withCredentials: true
           })
-          if (response.data?.success && response.data?.data?.push_notifications) {
+          if (response.data?.success && response.data?.data?.pushEnabled) {
             this.updatePushButtonStatus(true)
           } else {
             this.updatePushButtonStatus(false)
@@ -3201,6 +2932,36 @@ class EnhancedTraderApp {
         // Trigger Telegram toggle to show/hide config
         this.setupTelegramToggle()
       }
+      
+      // Load notification preferences
+      console.log('🔧 Loading notification preferences...')
+      const preferencesResponse = await axios.get('/api/notifications/preferences')
+      if (preferencesResponse.data?.success && preferencesResponse.data?.data) {
+        const prefs = preferencesResponse.data.data
+        console.log('🔧 Loaded preferences:', prefs)
+        
+        // Update checkboxes based on server preferences
+        const pushCheckbox = document.getElementById('push-notifications')
+        const emailCheckbox = document.getElementById('email-notifications')
+        const telegramNotifCheckbox = document.getElementById('telegram-notifications')
+        
+        if (pushCheckbox) {
+          pushCheckbox.checked = prefs.pushEnabled || false
+          console.log('🔧 Set push checkbox to:', prefs.pushEnabled)
+        }
+        if (emailCheckbox) {
+          emailCheckbox.checked = prefs.emailEnabled || false
+          console.log('🔧 Set email checkbox to:', prefs.emailEnabled)
+        }
+        if (telegramNotifCheckbox) {
+          telegramNotifCheckbox.checked = prefs.telegramEnabled || false
+          console.log('🔧 Set telegram checkbox to:', prefs.telegramEnabled)
+        }
+        
+        // Update push button status
+        this.updatePushButtonStatus(prefs.pushEnabled)
+      }
+      
     } catch (error) {
       console.error('Failed to load existing settings:', error)
       // Don't show error notification - this is optional loading

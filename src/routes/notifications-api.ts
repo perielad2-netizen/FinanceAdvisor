@@ -100,12 +100,16 @@ notificationsRoutes.get('/preferences', async (c) => {
       WHERE user_id = ?
     `).bind(payload.user_id).first()
 
+    console.log('📋 Raw DB result:', result)
+    
     const preferences = {
-      pushEnabled: result?.push_notifications !== false, // Default enabled
-      emailEnabled: result?.email_notifications !== false, // Default enabled
+      pushEnabled: result ? (result.push_notifications ? true : false) : true, // Default true for new users
+      emailEnabled: result ? (result.email_notifications ? true : false) : true, // Default true for new users
       telegramEnabled: result?.telegram_notifications || false,
       telegramConfigured: !!(result?.telegram_bot_token && result?.telegram_chat_id)
     }
+
+    console.log('📋 Converted preferences:', preferences)
 
     return c.json<APIResponse>({ 
       success: true, 
@@ -127,6 +131,7 @@ notificationsRoutes.post('/preferences', async (c) => {
 
     const { pushEnabled, emailEnabled, telegramEnabled } = await c.req.json()
     console.log('⚙️ Updating notification preferences for user:', payload.user_id)
+    console.log('📋 Received preferences:', { pushEnabled, emailEnabled, telegramEnabled })
 
     // Check if user preferences exist
     const existingPrefs = await c.env.DB.prepare(`
@@ -161,6 +166,13 @@ notificationsRoutes.post('/preferences', async (c) => {
         telegramEnabled ? 1 : 0
       ).run()
     }
+
+    console.log('✅ Preferences saved successfully:', { 
+      user_id: payload.user_id,
+      push: pushEnabled ? 1 : 0,
+      email: emailEnabled ? 1 : 0,
+      telegram: telegramEnabled ? 1 : 0
+    })
 
     return c.json<APIResponse>({ 
       success: true, 
