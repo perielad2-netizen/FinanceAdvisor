@@ -655,13 +655,13 @@ class EnhancedTraderApp {
           </div>
         </div>
         
-        <!-- Telegram Automation & Scheduler -->
+        <!-- AI Recommendation System -->
         <div class="bg-white rounded-lg shadow p-4 sm:p-6">
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-base sm:text-lg font-medium text-gray-900 flex items-center">
-              <i class="fab fa-telegram-plane mr-2 text-blue-500"></i>
-              <span class="hidden sm:inline">Telegram Automation</span>
-              <span class="sm:hidden">Telegram</span>
+              <i class="fas fa-brain mr-2 text-blue-500"></i>
+              <span class="hidden sm:inline">AI Recommendation System</span>
+              <span class="sm:hidden">AI System</span>
             </h3>
             <div class="flex items-center space-x-2">
               <span id="scheduler-status" class="text-xs sm:text-sm text-gray-500 hidden sm:inline">Checking...</span>
@@ -687,30 +687,30 @@ class EnhancedTraderApp {
               <span class="sm:hidden">Stop</span>
             </button>
             <button id="test-telegram-btn" class="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-2 sm:px-4 py-2 sm:py-3 rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all duration-200 flex items-center justify-center font-medium shadow-md text-sm">
-              <i class="fab fa-telegram-plane mr-1 sm:mr-2"></i>
-              <span class="hidden sm:inline">Test Bot</span>
+              <i class="fas fa-bell mr-1 sm:mr-2"></i>
+              <span class="hidden sm:inline">Test Notifications</span>
               <span class="sm:hidden">Test</span>
             </button>
             <button id="scheduler-settings-btn" class="bg-gradient-to-r from-gray-500 to-gray-600 text-white px-2 sm:px-4 py-2 sm:py-3 rounded-lg hover:from-gray-600 hover:to-gray-700 transition-all duration-200 flex items-center justify-center font-medium shadow-md text-sm col-span-2 sm:col-span-1">
               <i class="fas fa-cog mr-1 sm:mr-2"></i>
-              <span class="hidden sm:inline">Settings</span>
+              <span class="hidden sm:inline">Notification Settings</span>
               <span class="sm:hidden">Settings</span>
             </button>
           </div>
           
-          <!-- Scheduler Status Panel -->
+          <!-- System Status Panel -->
           <div id="scheduler-info" class="mt-4 p-3 sm:p-4 bg-gray-50 rounded-lg">
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm">
               <div class="flex justify-between sm:block">
-                <span class="text-gray-600">Last Run:</span>
+                <span class="text-gray-600">Last Analysis:</span>
                 <span id="last-run-time" class="font-medium sm:ml-2">Never</span>
               </div>
               <div class="flex justify-between sm:block">
-                <span class="text-gray-600">Next Run:</span>
+                <span class="text-gray-600">Next Scheduled:</span>
                 <span id="next-run-time" class="font-medium sm:ml-2">Not scheduled</span>
               </div>
               <div class="flex justify-between sm:block">
-                <span class="text-gray-600">Interval:</span>
+                <span class="text-gray-600">Frequency:</span>
                 <span id="run-interval" class="font-medium sm:ml-2">2 hours</span>
               </div>
             </div>
@@ -1194,7 +1194,7 @@ class EnhancedTraderApp {
     this.safeAddEventListener('generate-now-btn', 'click', () => this.generateRecommendationsNow())
     this.safeAddEventListener('start-scheduler-btn', 'click', () => this.startScheduler())
     this.safeAddEventListener('stop-scheduler-btn', 'click', () => this.stopScheduler())
-    this.safeAddEventListener('test-telegram-btn', 'click', () => this.testTelegram())
+    this.safeAddEventListener('test-telegram-btn', 'click', () => this.testNotifications())
     this.safeAddEventListener('scheduler-settings-btn', 'click', () => this.showSchedulerSettings())
     
     // Setup push notifications on dashboard load
@@ -2036,7 +2036,45 @@ class EnhancedTraderApp {
   }
 
   /**
-   * Test personal Telegram bot connection
+   * Test all enabled notification methods
+   */
+  async testNotifications() {
+    try {
+      this.showNotification('🧪 Testing all enabled notification methods...', 'info')
+      
+      const response = await axios.post('/api/notifications/test', {
+        message: 'This is a test notification from AI Recommendation System'
+      })
+      
+      if (response.data.success) {
+        const { push, email, telegram, details } = response.data
+        
+        let successMessage = '✅ Notification test completed!\n'
+        const methods = []
+        if (push) methods.push('📱 Push')
+        if (email) methods.push('📧 Email') 
+        if (telegram) methods.push('💬 Telegram')
+        
+        successMessage += `Delivered via: ${methods.join(', ')}`
+        
+        this.showNotification(successMessage, 'success')
+        
+        if (details && details.length > 0) {
+          setTimeout(() => {
+            this.showNotification(`Details: ${details.join(', ')}`, 'info')
+          }, 2000)
+        }
+      } else {
+        this.showNotification(`❌ Test failed: ${response.data.error}`, 'error')
+      }
+    } catch (error) {
+      console.error('Notification test error:', error)
+      this.showNotification('❌ Notification test failed. Please check your settings.', 'error')
+    }
+  }
+
+  /**
+   * Test personal Telegram bot connection (kept for backward compatibility)
    */
   async testTelegram() {
     try {
