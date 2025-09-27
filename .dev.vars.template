@@ -1,0 +1,38 @@
+# Local development environment variables
+# Copy this file to .dev.vars and fill in your actual API keys
+# .dev.vars is gitignored and will not be committed
+
+# JWT Secret for authentication
+JWT_SECRET=your-jwt-secret-key-here
+
+# API Keys for third-party services
+OPENAI_API_KEY=sk-proj-your-openai-key-here
+TWELVEDATA_API_KEY=your-twelvedata-key-here
+FINNHUB_API_KEY=your-finnhub-key-here
+
+# News API (optional - get free key from newsapi.org)
+NEWS_API_KEY=your-news-api-key-here
+
+# Email service - Resend API (3000 free emails/month)
+# Get from: https://resend.com/
+RESEND_API_KEY=your-resend-api-key-here
+FROM_EMAIL=notifications@yourdomain.com
+
+# Push Notifications - VAPID Keys (Web Push)
+# Generate with: npx web-push generate-vapid-keys
+VAPID_PUBLIC_KEY=your-vapid-public-key-here
+VAPID_PRIVATE_KEY=your-vapid-private-key-here
+VAPID_SUBJECT=mailto:admin@yourapp.com
+
+# Telegram bot integration (optional)
+# 1. Create bot via @BotFather on Telegram
+# 2. Get chat ID via @userinfobot
+TELEGRAM_BOT_TOKEN=your-bot-token-here
+TELEGRAM_CHAT_ID=your-chat-id-here
+
+# Legacy SendGrid (optional alternative to Resend)
+SENDGRID_API_KEY=your-sendgrid-api-key
+
+# App settings
+APP_URL=http://localhost:3000
+CORS_ORIGIN=http://localhost:3000

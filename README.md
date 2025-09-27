@@ -191,4 +191,32 @@
 2. Replace `your-resend-api-key-get-from-resend.com` in `.dev.vars`
 3. Test complete system with all notification methods
 
+### 🔑 **API Keys Setup Guide:**
+
+All API keys are stored in `.dev.vars` (automatically excluded from git commits):
+
+**For New Setup:**
+1. Copy `.dev.vars.template` to `.dev.vars`
+2. Fill in your actual API keys
+3. The `.dev.vars` file will never be committed to git (protected by .gitignore)
+
+**Required for full functionality:**
+- `RESEND_API_KEY` - Get from https://resend.com/ (free tier: 3000 emails/month)
+- `FROM_EMAIL` - Your verified sender email
+
+**Already configured (working in current environment):**
+- `OPENAI_API_KEY` - ✅ Working for AI analysis
+- `TWELVEDATA_API_KEY` - ✅ Working for market data  
+- `FINNHUB_API_KEY` - ✅ Working for market data
+- `VAPID_PUBLIC_KEY` & `VAPID_PRIVATE_KEY` - ✅ Working for push notifications
+- `TELEGRAM_BOT_TOKEN` & `TELEGRAM_CHAT_ID` - ✅ Working for Telegram
+
+**Optional:**
+- `NEWS_API_KEY` - Get from https://newsapi.org/ for news analysis
+
+**Security Notes:**
+- ✅ `.dev.vars` is in `.gitignore` - never gets committed
+- ✅ API keys stay local and secure
+- ✅ Template provided for easy setup by others
+
 The notification system is now fully implemented and push notifications are confirmed working!
