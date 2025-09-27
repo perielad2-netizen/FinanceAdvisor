@@ -72,33 +72,15 @@ app.post('/stop', async (c) => {
 })
 
 /**
- * Generate recommendations manually
+ * Generate recommendations manually - DEPRECATED: Use personal Telegram system
  */
 app.post('/generate-now', async (c) => {
-  try {
-    const { env } = c
-    const body = await c.req.json().catch(() => ({}))
-    const settings: Partial<SchedulerSettings> = body.settings || {}
-    
-    const scheduler = getScheduler(env)
-    const result = await scheduler.generateRecommendationsNow(settings)
-    
-    return c.json({
-      success: result.success,
-      message: result.message,
-      session: result.session,
-      recommendations: result.recommendations,
-      count: result.recommendations?.length || 0,
-      timestamp: new Date().toISOString()
-    })
-  } catch (error) {
-    console.error('❌ Manual generation failed:', error)
-    return c.json({
-      success: false,
-      message: `Manual generation failed: ${error.message}`,
-      timestamp: new Date().toISOString()
-    }, 500)
-  }
+  return c.json({
+    success: false,
+    message: 'This endpoint is deprecated. Please configure your personal Telegram bot in Settings and use the new personal system.',
+    error: 'DEPRECATED_ENDPOINT_USE_PERSONAL_TELEGRAM',
+    timestamp: new Date().toISOString()
+  }, 400)
 })
 
 /**
@@ -164,28 +146,12 @@ app.post('/test-system', async (c) => {
  * Test Telegram connection
  */
 app.post('/test-telegram', async (c) => {
-  try {
-    const { env } = c
-    const telegramNotifier = new TelegramNotifier(env)
-    const result = await telegramNotifier.testConnection()
-    
-    return c.json({
-      success: result.success,
-      botInfo: result.botInfo,
-      error: result.error,
-      message: result.success 
-        ? `✅ Telegram bot connected: @${result.botInfo?.username}`
-        : `❌ Telegram connection failed: ${result.error}`,
-      timestamp: new Date().toISOString()
-    })
-  } catch (error) {
-    console.error('❌ Telegram test failed:', error)
-    return c.json({
-      success: false,
-      message: `Telegram test failed: ${error.message}`,
-      timestamp: new Date().toISOString()
-    }, 500)
-  }
+  return c.json({
+    success: false,
+    message: 'This endpoint is deprecated. Please configure your personal Telegram bot in Settings and use the Test Bot button.',
+    error: 'DEPRECATED_ENDPOINT_USE_PERSONAL_TELEGRAM',
+    timestamp: new Date().toISOString()
+  }, 400)
 })
 
 /**

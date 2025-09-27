@@ -26,6 +26,69 @@ recommendationRoutes.get('/', async (c) => {
   }
 })
 
+// Generate new recommendations (personal system only)
+recommendationRoutes.post('/generate', async (c) => {
+  try {
+    // Get auth token from cookie
+    const { getCookie } = await import('hono/cookie')
+    const token = getCookie(c, 'auth-token')
+    
+    if (!token) {
+      return c.json<APIResponse>({ success: false, error: 'Not authenticated' }, 401)
+    }
+
+    let payload
+    try {
+      payload = JSON.parse(atob(token))
+    } catch (error) {
+      return c.json<APIResponse>({ success: false, error: 'Invalid token' }, 401)
+    }
+
+    // Check if token is expired
+    if (payload.exp < Date.now()) {
+      return c.json<APIResponse>({ success: false, error: 'Token expired' }, 401)
+    }
+
+    const { portfolioId, count = 5 } = await c.req.json()
+    
+    // For now, return mock recommendations since this is a demo
+    // In production, this would integrate with your AI recommendation engine
+    const mockRecommendations = [
+      {
+        id: 'rec-' + Math.random().toString(36).substr(2, 9),
+        portfolio_id: portfolioId,
+        symbol: 'AAPL',
+        action: 'BUY',
+        confidence_score: 0.85,
+        entry_price: 185.25,
+        target_price: 195.00,
+        stop_loss: 175.00,
+        reasoning: 'Strong earnings growth and positive analyst sentiment',
+        urgency: 'medium',
+        risk_level: 'low'
+      },
+      {
+        id: 'rec-' + Math.random().toString(36).substr(2, 9),
+        portfolio_id: portfolioId,
+        symbol: 'MSFT',
+        action: 'BUY',
+        confidence_score: 0.78,
+        entry_price: 420.15,
+        target_price: 440.00,
+        stop_loss: 405.00,
+        reasoning: 'Cloud revenue acceleration and AI initiatives',
+        urgency: 'medium',
+        risk_level: 'low'
+      }
+    ].slice(0, count)
+
+    return c.json<APIResponse>({ success: true, data: mockRecommendations })
+  } catch (error) {
+    console.error('Error generating recommendations:', error)
+    return c.json<APIResponse>({ success: false, error: 'Failed to generate recommendations' }, 500)
+  }
+})
+
 // Get recommendations for specific portfolio
 recommendationRoutes.get('/portfolio/:id', async (c) => {
   try {
