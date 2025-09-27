@@ -1405,30 +1405,64 @@ class EnhancedTraderApp {
    */
   async generateRecommendationsNow() {
     try {
-      this.showNotification('🚀 Generating recommendations now...', 'info')
+      this.showNotification('🚀 Generating personal recommendations...', 'info')
       
-      const response = await axios.post('/api/scheduler/generate-now', {
-        settings: {
-          maxRecommendationsPerSession: 10,
-          minConfidenceLevel: 0.7,
-          enableTelegramNotifications: true
-        }
+      // First check if user has personal Telegram configured
+      const telegramSettingsResponse = await axios.get('/api/personal-telegram/settings')
+      const telegramConfigured = telegramSettingsResponse.data.success && 
+                                  telegramSettingsResponse.data.data.botToken && 
+                                  telegramSettingsResponse.data.data.chatId
+
+      if (!telegramConfigured) {
+        this.showNotification('⚠️ Please configure your personal Telegram bot in Settings first!', 'warning')
+        return
+      }
+      
+      // Generate AI recommendations without using old scheduler system
+      const response = await axios.post('/api/recommendations/generate', {
+        portfolioId: this.selectedPortfolioId,
+        count: 5,
+        personalTelegram: true
       })
       
       if (response.data.success) {
-        const count = response.data.count || 0
-        this.showNotification(`✅ Generated ${count} recommendations and sent Telegram notifications!`, 'success')
+        const recommendations = response.data.data || []
         
-        // Update the recommendations display
-        if (count > 0) {
-          this.displayLatestRecommendations(response.data.recommendations)
+        // Send each recommendation to personal Telegram
+        let sentCount = 0
+        for (const rec of recommendations) {
+          try {
+            const telegramResponse = await axios.post('/api/personal-telegram/send-recommendation', {
+              portfolioId: rec.portfolio_id,
+              symbol: rec.symbol,
+              action: rec.action,
+              confidence: rec.confidence_score,
+              entryPrice: rec.entry_price,
+              targetPrice: rec.target_price,
+              stopLoss: rec.stop_loss,
+              reason: rec.reasoning,
+              urgency: rec.urgency || 'medium',
+              riskLevel: rec.risk_level || 'medium'
+            })
+            
+            if (telegramResponse.data.success) {
+              sentCount++
+            }
+          } catch (telegramError) {
+            console.error('Failed to send personal Telegram:', telegramError)
+          }
         }
+        
+        this.showNotification(`✅ Generated ${recommendations.length} recommendations and sent ${sentCount} to your personal Telegram!`, 'success')
+        
+        // Update the dashboard display
+        this.displayLatestRecommendations(recommendations)
       } else {
-        this.showNotification(`❌ Failed to generate recommendations: ${response.data.message}`, 'error')
+        this.showNotification(`❌ Failed to generate recommendations: ${response.data.error}`, 'error')
       }
     } catch (error) {
-      console.error('Manual generation error:', error)
-      this.showNotification('❌ Failed to generate recommendations', 'error')
+      console.error('Personal recommendation generation error:', error)
+      this.showNotification('❌ Failed to generate personal recommendations', 'error')
     }
   }
 
@@ -1486,22 +1520,18 @@ class EnhancedTraderApp {
    */
   async testTelegram() {
     try {
-      this.showNotification('📱 Testing Telegram bot connection...', 'info')
+      this.showNotification('📱 Testing your personal Telegram bot...', 'info')
       
-      const response = await axios.post('/api/scheduler/test-telegram')
+      const response = await axios.post('/api/personal-telegram/test')
       
       if (response.data.success) {
-        this.showNotification(`✅ Telegram bot connected! Bot: ${response.data.botInfo?.username || 'Unknown'}`, 'success')
-        
-        // Send test notification
-        await axios.post('/api/scheduler/send-test-notification')
-        this.showNotification('📱 Test notification sent to your Telegram!', 'info')
+        this.showNotification(`✅ Your personal Telegram bot is working! ${response.data.data.message}`, 'success')
       } else {
-        this.showNotification(`❌ Telegram connection failed: ${response.data.error}`, 'error')
+        this.showNotification(`❌ Personal Telegram test failed: ${response.data.error || response.data.data?.message}`, 'error')
       }
     } catch (error) {
-      console.error('Telegram test error:', error)
-      this.showNotification('❌ Telegram test failed', 'error')
+      console.error('Personal Telegram test error:', error)
+      this.showNotification('❌ Personal Telegram test failed. Please check your bot token and chat ID in Settings.', 'error')
     }
   }
 
@@ -1859,22 +1889,22 @@ class EnhancedTraderApp {
   }
 
   /**
-   * Test Telegram bot connection
+   * Test personal Telegram bot connection
    */
   async testTelegram() {
     try {
-      this.showNotification('🤖 Testing Telegram bot connection...', 'info')
+      this.showNotification('🤖 Testing your personal Telegram bot...', 'info')
       
-      const response = await axios.post('/api/scheduler/test-telegram')
+      const response = await axios.post('/api/personal-telegram/test')
       
       if (response.data.success) {
-        this.showNotification(`✅ ${response.data.message}`, 'success')
+        this.showNotification(`✅ ${response.data.data.message}`, 'success')
       } else {
-        this.showNotification(`❌ ${response.data.message}`, 'error')
+        this.showNotification(`❌ ${response.data.error || response.data.data?.message}`, 'error')
       }
     } catch (error) {
-      console.error('Telegram test error:', error)
-      this.showNotification('❌ Telegram test failed', 'error')
+      console.error('Personal Telegram test error:', error)
+      this.showNotification('❌ Personal Telegram test failed. Please configure your bot token and chat ID in Settings first.', 'error')
     }
   }
 
