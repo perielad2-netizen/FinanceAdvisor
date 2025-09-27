@@ -401,7 +401,7 @@ class EnhancedTraderApp {
                 <!-- User -->
                 <div class="flex items-center">
                   <i class="fas fa-user-circle text-lg text-gray-600 mr-1"></i>
-                  <span class="text-sm text-gray-700 hidden sm:inline">${this.currentUser.name}</span>
+                  <span class="text-sm text-gray-700 hidden sm:inline">${this.currentUser?.name || 'User'}</span>
                 </div>
                 
                 <!-- Mobile Menu Button -->
@@ -1367,7 +1367,7 @@ class EnhancedTraderApp {
       const response = await axios.post('/auth/login', { email, password })
       
       if (response.data.success) {
-        this.currentUser = response.data.data
+        this.currentUser = response.data.data.user
         await this.showMainApp()
       } else {
         this.showAuthError(response.data.error || 'Login failed')
